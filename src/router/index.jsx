@@ -1,0 +1,207 @@
+import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-router-dom'
+import {
+  PATHS,
+  INVENTORY_ROLES,
+  BRANCH_ROLES,
+  PHASE2_ROLES,
+  profilePathForRole,
+} from '@/router/paths'
+import { AuthGate } from '@/router/guards/AuthGate'
+import { RoleGate } from '@/router/guards/RoleGate'
+import { InventoryLayout } from '@/layouts/InventoryLayout'
+import { BranchManagerLayout } from '@/layouts/BranchManagerLayout'
+import { WorkspaceLayout } from '@/layouts/WorkspaceLayout'
+import { SplashPage } from '@/pages/splash/SplashPage'
+import { LoginPage } from '@/pages/auth/LoginPage'
+import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
+import { ProfilePage } from '@/pages/shared/ProfilePage'
+import { ComingSoonPage } from '@/pages/workspace/ComingSoonPage'
+import { DashboardPage as InventoryDashboardPage } from '@/pages/inventory/DashboardPage'
+import { ProductsPage } from '@/pages/inventory/ProductsPage'
+import { AddBundlePage } from '@/pages/inventory/AddBundlePage'
+import { EditBundlePage } from '@/pages/inventory/EditBundlePage'
+import { AddItemPage } from '@/pages/inventory/AddItemPage'
+import { EditItemPage } from '@/pages/inventory/EditItemPage'
+import { InventoryControlPage } from '@/pages/inventory/InventoryControlPage'
+import { SuppliersPage } from '@/pages/inventory/SuppliersPage'
+import { PurchaseOrdersPage } from '@/pages/inventory/PurchaseOrdersPage'
+import { OrderDetailPage } from '@/pages/inventory/OrderDetailPage'
+import { GenerateOrderPage } from '@/pages/inventory/GenerateOrderPage'
+import { DashboardPage as BranchDashboardPage } from '@/pages/branch/DashboardPage'
+import { StaffPage } from '@/pages/branch/StaffPage'
+import { AttendancePage } from '@/pages/branch/AttendancePage'
+import { HolidaysPage } from '@/pages/branch/HolidaysPage'
+import { LeavesPage } from '@/pages/branch/LeavesPage'
+import { PerformanceEmployeePage } from '@/pages/branch/PerformanceEmployeePage'
+import { SalesPage } from '@/pages/branch/SalesPage'
+import { SuppliersPage as BranchSuppliersPage } from '@/pages/branch/SuppliersPage'
+
+// Legacy /branch/performance/employees/:id → staff detail URL
+function RedirectLegacyPerformanceEmployee() {
+  const { staffId } = useParams()
+  return <Navigate to={PATHS.branch.staffEmployee(staffId)} replace />
+}
+// Phase 2 placeholders live under pages/phase2/ — restore imports when modules ship
+// import { CustomerPage } from '@/pages/phase2/CustomerPage'
+// import { ReportsPage } from '@/pages/phase2/BranchReportsPage'
+import { BranchInventoryPage } from '@/pages/branch/BranchInventoryPage'
+import { EditDemandRequestPage } from '@/pages/branch/EditDemandRequestPage'
+import { ResourcesPage } from '@/pages/branch/ResourcesPage'
+import { DiscountsPage } from '@/pages/branch/DiscountsPage'
+import { ActivityLogsPage } from '@/pages/branch/ActivityLogsPage'
+import { AdminAuthGate } from '@/router/guards/AdminAuthGate'
+import { AdminLayout } from '@/layouts/AdminLayout'
+import { DashboardPage as AdminDashboardPage } from '@/pages/admin/DashboardPage'
+import { ReportsPage as AdminReportsPage } from '@/pages/admin/ReportsPage'
+import { BranchesPage as AdminBranchesPage } from '@/pages/admin/BranchesPage'
+import { LeavesPage as AdminLeavesPage } from '@/pages/admin/LeavesPage'
+import { InvoicesPage as AdminInvoicesPage } from '@/pages/admin/InvoicesPage'
+import { TaxProfitPage as AdminTaxProfitPage } from '@/pages/admin/TaxProfitPage'
+import { CompanyPage as AdminCompanyPage } from '@/pages/admin/CompanyPage'
+import { SettingsPage as AdminSettingsPage } from '@/pages/admin/SettingsPage'
+import { AdminLogsPage } from '@/pages/admin/AdminLogsPage'
+import { AdminProfilePage } from '@/pages/admin/AdminProfilePage'
+import { NotificationsPage } from '@/pages/shared/NotificationsPage'
+import { NotFoundPage, RootNotFoundPage } from '@/pages/shared/NotFoundPage'
+import { RouteErrorPage } from '@/pages/shared/RouteErrorPage'
+import { useAuthSession } from '@/hooks/shared/useAuthSession'
+import CategoriesPage from '@/pages/inventory/CategoriesPage'
+
+function ProfileRedirect() {
+  const { role } = useAuthSession()
+  return <Navigate to={profilePathForRole(role)} replace />
+}
+
+const router = createBrowserRouter([
+  { path: PATHS.splash, element: <SplashPage />, errorElement: <RouteErrorPage /> },
+  { path: PATHS.login, element: <LoginPage />, errorElement: <RouteErrorPage /> },
+  { path: PATHS.forgotPassword, element: <ForgotPasswordPage />, errorElement: <RouteErrorPage /> },
+  {
+    path: PATHS.admin.root,
+    element: <AdminAuthGate />,
+    errorElement: <RouteErrorPage />,
+    children: [
+      {
+        element: <AdminLayout />,
+        errorElement: <RouteErrorPage />,
+        children: [
+          { index: true, element: <AdminDashboardPage /> },
+          { path: 'dashboard', element: <AdminDashboardPage /> },
+          { path: 'reports', element: <AdminReportsPage /> },
+          { path: 'branches', element: <AdminBranchesPage /> },
+          { path: 'leaves', element: <AdminLeavesPage /> },
+          { path: 'notifications', element: <NotificationsPage /> },
+          { path: 'invoices', element: <AdminInvoicesPage /> },
+          { path: 'tax-profit', element: <AdminTaxProfitPage /> },
+          { path: 'company', element: <AdminCompanyPage /> },
+          { path: 'settings', element: <AdminSettingsPage /> },
+          { path: 'logs', element: <AdminLogsPage /> },
+          { path: 'profile', element: <AdminProfilePage /> },
+          // Unknown /admin/* — keep AdminLayout topbar
+          { path: '*', element: <NotFoundPage /> },
+        ],
+      },
+    ],
+  },
+  {
+    element: <AuthGate />,
+    errorElement: <RouteErrorPage />,
+    children: [
+      { path: PATHS.profile, element: <ProfileRedirect /> },
+      {
+        element: <RoleGate roles={INVENTORY_ROLES} />,
+        children: [
+          {
+            path: PATHS.inventory.root,
+            element: <InventoryLayout />,
+            errorElement: <RouteErrorPage />,
+            children: [
+              { index: true, element: <InventoryDashboardPage /> },
+              { path: 'products', element: <ProductsPage /> },
+              { path: 'products/new', element: <AddItemPage /> },
+              { path: 'products/:id/edit', element: <EditItemPage /> },
+              { path: 'bundles', element: <AddBundlePage /> },
+              { path: 'bundles/:id/edit', element: <EditBundlePage /> },
+              { path: 'control', element: <InventoryControlPage /> },
+              { path: 'suppliers', element: <SuppliersPage /> },
+              { path: 'orders', element: <PurchaseOrdersPage /> },
+              { path: 'orders/generate', element: <GenerateOrderPage /> },
+              { path: 'orders/:id', element: <OrderDetailPage /> },
+              { path: 'categories', element: <CategoriesPage /> },
+              { path: 'notifications', element: <NotificationsPage /> },
+              { path: 'profile', element: <ProfilePage /> },
+              { path: '*', element: <NotFoundPage /> },
+            ],
+          },
+        ],
+      },
+      {
+        element: <RoleGate roles={BRANCH_ROLES} />,
+        children: [
+          {
+            path: PATHS.branch.root,
+            element: <BranchManagerLayout />,
+            errorElement: <RouteErrorPage />,
+            children: [
+              { index: true, element: <BranchDashboardPage /> },
+              { path: 'staff', element: <StaffPage /> },
+              // Performance detail — Staff Management is source of truth
+              {
+                path: 'staff/employees/:staffId',
+                element: <PerformanceEmployeePage />,
+              },
+              // Old /branch/performance URLs → Staff Performance tab
+              {
+                path: 'performance',
+                element: <Navigate to={`${PATHS.branch.staff}?tab=performance`} replace />,
+              },
+              {
+                path: 'performance/employees/:staffId',
+                element: <RedirectLegacyPerformanceEmployee />,
+              },
+              { path: 'attendance', element: <AttendancePage /> },
+              { path: 'holidays', element: <HolidaysPage /> },
+              { path: 'leaves', element: <LeavesPage /> },
+              { path: 'sales', element: <SalesPage /> },
+              // TODO(phase2): customer + branch reports — see pages/phase2/
+              // { path: 'customer', element: <CustomerPage /> },
+              { path: 'inventory', element: <BranchInventoryPage /> },
+              {
+                path: 'inventory/demand-requests/:id/edit',
+                element: <EditDemandRequestPage />,
+              },
+              // { path: 'reports', element: <ReportsPage /> },
+              { path: 'suppliers', element: <BranchSuppliersPage /> },
+              { path: 'resources', element: <ResourcesPage /> },
+              { path: 'discounts', element: <DiscountsPage /> },
+              { path: 'logs', element: <ActivityLogsPage /> },
+              { path: 'notifications', element: <NotificationsPage /> },
+              { path: 'profile', element: <ProfilePage /> },
+              { path: '*', element: <NotFoundPage /> },
+            ],
+          },
+        ],
+      },
+      {
+        element: <RoleGate roles={PHASE2_ROLES} />,
+        children: [
+          {
+            path: PATHS.workspace.root,
+            element: <WorkspaceLayout />,
+            children: [
+              { index: true, element: <ComingSoonPage /> },
+              { path: 'profile', element: <ProfilePage /> },
+              { path: '*', element: <NotFoundPage /> },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  // Outside every role prefix (or guest) — role topbar when logged in
+  { path: '*', element: <RootNotFoundPage /> },
+])
+
+export function AppRouter() {
+  return <RouterProvider router={router} />
+}

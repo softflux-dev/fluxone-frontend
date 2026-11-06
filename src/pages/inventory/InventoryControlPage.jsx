@@ -1,0 +1,417 @@
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { AddStockInDialog } from '@/components/feature/control/AddStockInDialog'
+import { AdjustmentDialog } from '@/components/feature/control/AdjustmentDialog'
+import { AdjustmentTable } from '@/components/feature/control/AdjustmentTable'
+import { ControlDailyPriceBanner } from '@/components/feature/control/ControlDailyPriceBanner'
+import { ControlKpiCards } from '@/components/feature/control/ControlKpiCards'
+import { ControlPriceRuleBanner } from '@/components/feature/control/ControlPriceRuleBanner'
+import { ControlSecondaryActions } from '@/components/feature/control/ControlTopActions'
+import { DailyPriceReviewDialog } from '@/components/feature/control/DailyPriceReviewDialog'
+import { ControlLowStockBanner } from '@/components/feature/control/ControlLowStock'
+import { InventoryControlTabs } from '@/components/feature/control/InventoryControlTabs'
+import { MovementFilters } from '@/components/feature/control/MovementFilters'
+import { StockAlertsDialog } from '@/components/feature/control/StockAlertsDialog'
+import { StockInTable } from '@/components/feature/control/StockInTable'
+import { StockOutTable } from '@/components/feature/control/StockOutTable'
+import { ThresholdTable } from '@/components/feature/control/ThresholdTable'
+import { UpdateThresholdDialog } from '@/components/feature/control/UpdateThresholdDialog'
+import { ViewMovementDetailsDialog } from '@/components/feature/control/ViewMovementDetailsDialog'
+import { MotionHeader, MotionReveal } from '@/components/shared/MotionReveal'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { useDebouncedSearch } from '@/hooks/shared/useDebouncedSearch'
+import {
+  exportControlRows,
+  patchControlProduct,
+  useInventoryControl,
+} from '@/hooks/inventory/useInventoryControl'
+import { downloadControlExport } from '@/lib/control/controlCsv'
+import {
+  CONTROL_UI_TAB,
+  LEDGER_KIND_OPTIONS,
+  STOCK_OUT_KIND_OPTIONS,
+} from '@/lib/control/controlTabs'
+import { MOVEMENT_TYPES } from '@/lib/control/mapStockMovement'
+import { toastError, toastInfo, toastSuccess } from '@/lib/toast'
+import { useAppSelector } from '@/rtk/hooks'
+import { buildListQuery } from '@/rtk/features/control/controlSlice'
+
+function asProductRow(row) {
+  if (!row) return null
+  return {
+    ...row,
+    productId: row.productId || row.id,
+    productName: row.productName || row.name,
+  }
+}
+
+export function InventoryControlPage() {
+  const [tab, setTab] = useState(MOVEMENT_TYPES.IN)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const {
+    items,
+    pagination,
+    filters,
+    loading,
+    mutating,
+    error,
+    catalog,
+    selectedCategorySubs,
+    summary,
+    summaryLoading,
+    updateFilters,
+    setPage,
+    createStockIn,
+    createMovementForType,
+    reloadSummary,
+    reload,
+    globalFilters,
+  } = useInventoryControl(tab)
+
+  const stockInMutating = useAppSelector(
+    (state) => state.control.byType?.[MOVEMENT_TYPES.IN]?.mutating || false,
+  )
+
+  const { localQ, setLocalQ, onSearchChange } = useDebouncedSearch(
+    updateFilters,
+    filters.q || '',
+  )
+
+  const [addStockInOpen, setAddStockInOpen] = useState(false)
+  const [updateStockRow, setUpdateStockRow] = useState(null)
+  const [adjustmentOpen, setAdjustmentOpen] = useState(false)
+  const [thresholdTarget, setThresholdTarget] = useState(null)
+  const [detailsTarget, setDetailsTarget] = useState(null)
+  const [detailsTab, setDetailsTab] = useState(tab)
+  const [alertsOpen, setAlertsOpen] = useState(false)
+  const [dailyPriceOpen, setDailyPriceOpen] = useState(false)
+
+  // Deep-link: /inventory/control?alerts=1 → open Stock Alerts
+  useEffect(() => {
+    if (searchParams.get('alerts') !== '1') return
+    setAlertsOpen(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete('alerts')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+  const [exportLoading, setExportLoading] = useState(false)
+  const [productActionLoading, setProductActionLoading] = useState(false)
+
+  function handleTabChange(nextTab) {
+    if (nextTab === tab) return
+    setAdjustmentOpen(false)
+    setUpdateStockRow(null)
+    setThresholdTarget(null)
+    setDetailsTarget(null)
+    // Reset kind filter — options differ between Adjustment and Stock Out tabs
+    if (filters.ledgerKind) updateFilters({ ledgerKind: '' })
+    setTab(nextTab)
+  }
+
+  function handleFilterChange(patch) {
+    if (patch.q !== undefined) setLocalQ(patch.q)
+    updateFilters(patch)
+  }
+
+  async function handleStockInCreate(payload) {
+    const result = await createStockIn(payload)
+    if (result.success) {
+      setAddStockInOpen(false)
+      setUpdateStockRow(null)
+      toastSuccess('Saved')
+    } else {
+      toastError(result.error || 'Save failed')
+    }
+    return result
+  }
+
+  async function handleUpdateStockFromRow(payload) {
+    const line = payload.lines?.[0]
+    if (!line) return { success: false, error: 'Missing line' }
+
+    const stockResult = await createStockIn(payload)
+    if (!stockResult.success) {
+      toastError(stockResult.error || 'Stock update failed')
+      return stockResult
+    }
+
+    const productPatch = {}
+    if (line.sellingPrice != null) productPatch.sellingPrice = Number(line.sellingPrice)
+    if (line.unitCost != null) productPatch.purchasePrice = Number(line.unitCost)
+
+    if (Object.keys(productPatch).length > 0) {
+      const patchRes = await patchControlProduct(line.productId, productPatch)
+      if (!patchRes.success) {
+        const message = String(patchRes.error || '')
+        if (/utilized|previous stock/i.test(message)) {
+          toastSuccess('Stock added. Existing units keep their price until they sell out.')
+        } else {
+          toastError(message || 'Stock added, but price update failed')
+        }
+      }
+    }
+
+    setUpdateStockRow(null)
+    toastSuccess('Stock updated')
+    void reloadSummary?.()
+    return { success: true }
+  }
+
+  async function handleAdjustmentSubmit(payload) {
+    if (payload.kind === 'stock_in') {
+      return handleStockInCreate(payload)
+    }
+    const result = await createMovementForType(payload.movementType, payload.body)
+    if (result.success) {
+      setAdjustmentOpen(false)
+      toastSuccess('Saved')
+    } else {
+      toastError(result.error || 'Save failed')
+    }
+    return result
+  }
+
+  async function handleThresholdSubmit(payload) {
+    setProductActionLoading(true)
+    try {
+      const result = await patchControlProduct(payload.productId, {
+        reorderPoint: payload.reorderPoint,
+      })
+      if (!result.success) {
+        toastError(result.error || 'Threshold update failed')
+        return { success: false, error: result.error }
+      }
+      setThresholdTarget(null)
+      toastSuccess('Threshold updated')
+      void reloadSummary?.()
+      void reload?.()
+      return { success: true }
+    } finally {
+      setProductActionLoading(false)
+    }
+  }
+
+  async function handleExport() {
+    if (tab === CONTROL_UI_TAB.THRESHOLDS) {
+      toastInfo('Export is not available on Manage Threshold')
+      return
+    }
+    setExportLoading(true)
+    try {
+      const query = {
+        ...buildListQuery(globalFilters, { page: 1, limit: 1 }),
+        movementType: tab,
+      }
+      delete query.page
+      delete query.limit
+      const result = await exportControlRows(query)
+      if (!result.success) {
+        toastError(result.error || 'Export failed')
+        return
+      }
+      const rows = Array.isArray(result.data?.rows) ? result.data.rows : []
+      if (!rows.length) {
+        toastInfo('No rows to export for this tab and filters')
+        return
+      }
+      downloadControlExport(rows, tab)
+      toastSuccess(`Exported ${rows.length} row(s)`)
+    } catch (err) {
+      toastError(err?.message || 'Export failed')
+    } finally {
+      setExportLoading(false)
+    }
+  }
+
+  function openDetails(row) {
+    setDetailsTab(row?.movementType || tab)
+    setDetailsTarget(row)
+  }
+
+  const tabCounts = summary?.tabCounts || null
+  const alertCount = Number(summary?.alertCount) || 0
+  const dailyPricePendingCount = Number(summary?.dailyPricePendingCount) || 0
+  const priceGateOn = Boolean(summary?.priceRequiresStockUtilized)
+
+  return (
+    <div className="space-y-6">
+      <MotionHeader>
+        <div className="space-y-3">
+          <PageHeader
+            title="Inventory Control"
+            description="Every movement, accounted for. Keep your stock in balance."
+            actions={
+              <ControlSecondaryActions
+                onExport={handleExport}
+                exportLoading={exportLoading}
+              />
+            }
+          />
+        </div>
+      </MotionHeader>
+
+      <ControlPriceRuleBanner active={priceGateOn} />
+
+      {error ? (
+        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-100">
+          {error}
+        </p>
+      ) : null}
+
+      <MotionReveal delay={0.02}>
+        <ControlKpiCards
+          summary={summary}
+          loading={summaryLoading && !summary}
+          onAttentionClick={() => setAlertsOpen(true)}
+        />
+      </MotionReveal>
+
+      <MotionReveal delay={0.03}>
+        <div className="space-y-3">
+          <ControlDailyPriceBanner
+            pendingCount={dailyPricePendingCount}
+            onReview={() => setDailyPriceOpen(true)}
+          />
+          <ControlLowStockBanner
+            alertCount={alertCount}
+            onViewItems={() => setAlertsOpen(true)}
+          />
+        </div>
+      </MotionReveal>
+
+      <MotionReveal delay={0.04}>
+        <MovementFilters
+          q={localQ}
+          type={filters.type || ''}
+          categoryId={filters.categoryId || ''}
+          subcategoryId={filters.subcategoryId || ''}
+          productId={filters.productId || ''}
+          variantTypeId={filters.variantTypeId || ''}
+          variantValueId={filters.variantValueId || ''}
+          ledgerKind={filters.ledgerKind || ''}
+          from={filters.from || ''}
+          to={filters.to || ''}
+          showLedgerKind={
+            tab === MOVEMENT_TYPES.ADJUSTMENT || tab === MOVEMENT_TYPES.OUT
+          }
+          ledgerKindOptions={
+            tab === MOVEMENT_TYPES.OUT ? STOCK_OUT_KIND_OPTIONS : LEDGER_KIND_OPTIONS
+          }
+          categories={catalog.parents || []}
+          subcategories={selectedCategorySubs || []}
+          onSearchChange={onSearchChange}
+          onChange={handleFilterChange}
+        />
+      </MotionReveal>
+
+      <MotionReveal delay={0.06}>
+        <InventoryControlTabs value={tab} onChange={handleTabChange} counts={tabCounts} />
+      </MotionReveal>
+
+      <MotionReveal delay={0.08}>
+        {tab === MOVEMENT_TYPES.IN ? (
+          <StockInTable
+            items={items}
+            loading={loading}
+            pagination={pagination}
+            onPageChange={setPage}
+            onPageSizeChange={(limit) => updateFilters({ limit })}
+            onAddStock={() => setAddStockInOpen(true)}
+            onUpdateStock={(row) => setUpdateStockRow(row)}
+            onViewDetails={openDetails}
+          />
+        ) : null}
+        {tab === MOVEMENT_TYPES.OUT ? (
+          <StockOutTable
+            items={items}
+            loading={loading}
+            pagination={pagination}
+            onPageChange={setPage}
+            onPageSizeChange={(limit) => updateFilters({ limit })}
+          />
+        ) : null}
+        {tab === MOVEMENT_TYPES.ADJUSTMENT ? (
+          <AdjustmentTable
+            items={items}
+            loading={loading}
+            pagination={pagination}
+            onPageChange={setPage}
+            onPageSizeChange={(limit) => updateFilters({ limit })}
+            onAddAdjustment={() => setAdjustmentOpen(true)}
+            onViewDetails={openDetails}
+          />
+        ) : null}
+        {tab === CONTROL_UI_TAB.THRESHOLDS ? (
+          <ThresholdTable
+            items={items}
+            loading={loading}
+            onEdit={(row) => setThresholdTarget(asProductRow(row))}
+          />
+        ) : null}
+      </MotionReveal>
+
+      <AddStockInDialog
+        open={addStockInOpen}
+        onOpenChange={setAddStockInOpen}
+        catalog={catalog}
+        loading={stockInMutating}
+        onSubmit={handleStockInCreate}
+      />
+
+      <AddStockInDialog
+        open={Boolean(updateStockRow)}
+        onOpenChange={(open) => {
+          if (!open) setUpdateStockRow(null)
+        }}
+        mode="update"
+        seedRow={updateStockRow}
+        catalog={catalog}
+        loading={stockInMutating}
+        onSubmit={handleUpdateStockFromRow}
+      />
+
+      <AdjustmentDialog
+        open={adjustmentOpen}
+        onOpenChange={setAdjustmentOpen}
+        catalog={catalog}
+        loading={mutating}
+        onSubmit={handleAdjustmentSubmit}
+      />
+
+      <UpdateThresholdDialog
+        open={Boolean(thresholdTarget)}
+        onOpenChange={(open) => {
+          if (!open) setThresholdTarget(null)
+        }}
+        row={thresholdTarget}
+        loading={productActionLoading}
+        onSubmit={handleThresholdSubmit}
+      />
+
+      <ViewMovementDetailsDialog
+        open={Boolean(detailsTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDetailsTarget(null)
+        }}
+        row={detailsTarget}
+        tab={detailsTab}
+      />
+
+      <StockAlertsDialog
+        open={alertsOpen}
+        onOpenChange={setAlertsOpen}
+        onEditThreshold={(row) => setThresholdTarget(asProductRow(row))}
+        onChanged={() => void reloadSummary?.()}
+      />
+
+      <DailyPriceReviewDialog
+        open={dailyPriceOpen}
+        onOpenChange={setDailyPriceOpen}
+        onChanged={() => void reloadSummary?.()}
+      />
+    </div>
+  )
+}
+
+export default InventoryControlPage
