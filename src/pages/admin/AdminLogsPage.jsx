@@ -143,7 +143,7 @@ export function AdminLogsPage() {
       } else {
         rows = await fetchAllMatching({ includeIds: selectedIds })
       }
-      exportAdminLogsSelection({ rows, filters, branchesById })
+      await exportAdminLogsSelection({ rows, filters, branchesById })
     } catch (err) {
       setExportError(err?.message || 'Export failed')
     } finally {

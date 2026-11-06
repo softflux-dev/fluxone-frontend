@@ -23,11 +23,11 @@ export function AdminLogsTabs({ value, onChange, className }) {
             aria-selected={active}
             onClick={() => onChange?.(tab.id)}
             className={cn(
-              'relative inline-flex cursor-pointer items-center px-3 py-2.5 text-sm font-semibold transition-colors duration-200 sm:px-3.5',
-              active
-                ? 'text-foreground'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
+            'relative inline-flex cursor-pointer items-center px-3 py-2.5 text-sm font-semibold transition-colors duration-200 sm:px-3.5',
+            active
+              ? 'text-foreground'
+              : 'text-slate-600 hover:text-foreground dark:text-muted-foreground',
+          )}
           >
             <span className="whitespace-nowrap">{tab.label}</span>
             {active ? (

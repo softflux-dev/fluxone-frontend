@@ -1,4 +1,4 @@
-import { exportRowsToStyledExcel } from '@/lib/export/csvExport'
+import { exportRowsToStyledExcel, buildExportFileName } from '@/lib/export/csvExport'
 import {
   ADMIN_LOG_CATEGORY_LABELS,
   ADMIN_LOG_ROLE_OPTIONS,
@@ -8,7 +8,6 @@ import {
   localDateInputValue,
 } from '@/lib/admin/adminLogs'
 import { roleDisplayName } from '@/lib/nav'
-
 const EXPORT_HEADERS = [
   'Timestamp',
   'Branch',
@@ -27,15 +26,9 @@ function roleLabel(role) {
   return roleDisplayName(role) || role
 }
 
-function formatExportDateStamp(from, to) {
-  const fmt = (isoDate) => {
-    if (!isoDate) return 'All'
-    const d = new Date(`${isoDate}T12:00:00`)
-    if (Number.isNaN(d.getTime())) return isoDate
-    const day = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    return day.replace(/\s/g, '')
-  }
-  return `${fmt(from)}_${fmt(to)}`
+function exportDateStamp(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`
 }
 
 function buildFilterSummary(filters = {}, branchesById = {}) {
@@ -82,7 +75,7 @@ function mapLogExportRow(row) {
 /**
  * Export selected Admin Log rows — Logs_[TabName]_[DateFrom]_[DateTo].xlsx (styled .xls).
  */
-export function exportAdminLogsSelection({
+export async function exportAdminLogsSelection({
   rows = [],
   filters = {},
   branchesById = {},
@@ -90,19 +83,13 @@ export function exportAdminLogsSelection({
   if (!rows.length) throw new Error('No rows to export')
 
   const tabSlug = adminLogTabFileSlug(filters.tab)
-  const dateSlug = formatExportDateStamp(filters.from, filters.to)
-  const filename = `Logs_${tabSlug}_${dateSlug}.xlsx`
-  const summary = buildFilterSummary(filters, branchesById)
+  const filename = `admin-logs-${exportDateStamp()}.xlsx`
 
-  const dataRows = rows.map(mapLogExportRow)
-  const preamble = [[`Active filters: ${summary}`, ...Array(EXPORT_HEADERS.length - 1).fill('')]]
-
-  exportRowsToStyledExcel({
+  await exportRowsToStyledExcel({
     filename,
     sheetName: tabSlug.slice(0, 31) || 'Logs',
     headers: EXPORT_HEADERS,
-    rows: [...preamble, ...dataRows],
-    rowStyles: [{ background: '#f1f5f9' }],
+    rows: rows.map(mapLogExportRow),
     freezeHeader: true,
     enableFilter: true,
   })

@@ -12,9 +12,9 @@ export function PageHeader({ eyebrow, title, description, actions, className }) 
     >
       <div className="min-w-0">
         {eyebrow ? (
-          <p className="text-xs font-semibold tracking-[0.14em] text-slate-400 uppercase dark:text-slate-500">
-            {eyebrow}
-          </p>
+          <p className="text-xs font-semibold tracking-[0.14em] text-slate-600 uppercase dark:text-slate-500">
+  {eyebrow}
+</p>
         ) : null}
         <h1
           className={cn(
@@ -25,7 +25,7 @@ export function PageHeader({ eyebrow, title, description, actions, className }) 
           {title}
         </h1>
         {description ? (
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>
+         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{description}</p>
         ) : null}
       </div>
       {actions ? (
