@@ -1,6 +1,6 @@
 # FluxOne Inventory — Client
 
-React + Vite admin / inventory / branch portals...
+React + Vite admin / inventory / branch portals
 
 - **Language:** JavaScript / JSX only (no TypeScript unless the team decides later)
 - **Architecture & conventions:** see **[ARCHITECTURE.md](./ARCHITECTURE.md)** (folder map, data-fetching rules, golden examples, cross-links)
