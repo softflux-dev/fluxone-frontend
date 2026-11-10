@@ -1,5 +1,5 @@
 // Control movement CSV helpers — Export (tab-specific, not Products CSV).
-import { rowsToCsv, downloadCsv } from '@/lib/export/csvExport'
+import { exportRowsToStyledExcel, buildExportFileName } from '@/lib/export/csvExport'
 
 export const CONTROL_CSV_HEADERS = [
   'S.N.',
@@ -50,7 +50,7 @@ function formatDateTime(value) {
 }
 
 // Map API export rows → CSV download for active tab.
-export function downloadControlExport(rows, movementType) {
+export async function downloadControlExport(rows, movementType) {
   const list = Array.isArray(rows) ? rows : []
   if (!list.length) throw new Error('No rows to export')
 
@@ -110,7 +110,10 @@ export function downloadControlExport(rows, movementType) {
     ]
   })
 
-  const csv = rowsToCsv(CONTROL_CSV_HEADERS, dataRows)
-  const stamp = new Date().toISOString().slice(0, 10)
-  downloadCsv(`fluxone-control-${movementType || 'export'}-${stamp}.csv`, csv)
+   await exportRowsToStyledExcel({
+    filename: buildExportFileName(`inventory-control-${movementType || 'export'}`),
+    sheetName: 'Control',
+    headers: CONTROL_CSV_HEADERS,
+    rows: dataRows,
+  })
 }
