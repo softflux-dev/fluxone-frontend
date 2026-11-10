@@ -7,7 +7,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 export const PAGE_SIZE = 8
 
-// Filters / export / action controls — 8px corners (theme --radius-md)
+// Filters / export / action controls — 8px corners (theme --radius-md)))
 export const UI_RADIUS = 'rounded-md'
 
 // Category / subcategory name caps (create + edit)
