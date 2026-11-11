@@ -6,7 +6,7 @@ const BLOCKED_START = /^[=+\-@\t\r]/
 const NUMBER_LIKE = /^[+-]?(\d+\.?\d*|\.\d*)?$/
 
 function Input({ className, type, onChange, allowSpecial = false, ...props }) {
-    // type na diya ho to browser use text samajhta hai
+    // If type is not provided, the browser treats it as text.
   const isTextType = !type || type === 'text' || type === 'search'
 
   function handleChange(event) {
