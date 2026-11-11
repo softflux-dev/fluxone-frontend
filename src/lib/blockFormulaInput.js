@@ -1,3 +1,4 @@
+//for inputfields
 const BLOCKED_START = /^[=+\-@\t\r]/
 const NUMBER_LIKE = /^[+-]?(\d+\.?\d*|\.\d*)?$/
 

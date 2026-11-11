@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
-// Text fields: =, +, - ya @ se shuru hone wala formula-jaisa text nahi chale ga.
-// Number jaisi values (-5, +5, 12.5) hamesha theek hain.
+// Text fields: Formula-like text starting with =, +, -, or @ is not allowed.
+// Number-like values (-5, +5, 12.5) are always valid.
 const BLOCKED_START = /^[=+\-@\t\r]/
 const NUMBER_LIKE = /^[+-]?(\d+\.?\d*|\.\d*)?$/
 
