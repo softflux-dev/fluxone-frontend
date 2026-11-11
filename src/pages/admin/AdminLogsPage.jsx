@@ -10,6 +10,7 @@ import { useAdminLogs } from '@/hooks/admin/useAdminLogs'
 import { ADMIN_LOG_CATEGORY_LABELS } from '@/lib/admin/adminLogs'
 import { exportAdminLogsSelection } from '@/lib/export/adminLogsExport'
 import { fetchAdminBranchOptions } from '@/hooks/admin/useAdminBranches'
+import { Input } from '@/components/ui/input'
 
 // Parent: owns tab/filters/selection/fetch — Children: Tabs, Filters, Table, ExportBar
 export function AdminLogsPage() {
@@ -75,6 +76,30 @@ export function AdminLogsPage() {
     filters.settingCategory,
     filters.q,
   ])
+
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+  const t = setTimeout(() => setDebouncedSearch(search.trim()), 400)
+  return () => clearTimeout(t)
+}, [search])
+
+ 
+useEffect(() => {
+  if (debouncedSearch === (filters.q ?? '')) return
+  updateFilters({ q: debouncedSearch || undefined })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [debouncedSearch])
+
+
+useEffect(() => {
+  if (!filters.q) {
+    setSearch('')
+    setDebouncedSearch('')
+  }
+}, [filters.q])
+
 
   const selectedCount = useMemo(() => {
     if (selectAllMatching) {
@@ -205,6 +230,16 @@ export function AdminLogsPage() {
           {exportError ? (
             <p className="mb-3 text-xs font-medium text-red-600">{exportError}</p>
           ) : null}
+             <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setDebouncedSearch(search.trim())
+            }}
+            placeholder="Search action, item or actor"
+            className="mb-3 w-full"
+          />
           <AdminLogsTable
             items={items}
             loading={loading}
