@@ -6,6 +6,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import App from '@/App.jsx'
 import './index.css'
+import '@/lib/blockFormulaInput' //for blockinput
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

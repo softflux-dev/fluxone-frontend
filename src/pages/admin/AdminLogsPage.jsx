@@ -80,7 +80,7 @@ export function AdminLogsPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
-useEffect(() => {
+  useEffect(() => {
   const t = setTimeout(() => setDebouncedSearch(search.trim()), 400)
   return () => clearTimeout(t)
 }, [search])
@@ -229,8 +229,7 @@ useEffect(() => {
           {exportError ? (
             <p className="mb-3 text-xs font-medium text-red-600">{exportError}</p>
           ) : null}
-
-                <Input
+             <Input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -240,7 +239,6 @@ useEffect(() => {
             placeholder="Search action, item or actor"
             className="mb-3 w-full"
           />
-
           <AdminLogsTable
             items={items}
             loading={loading}
