@@ -52,10 +52,12 @@ export function TaxProfitTable({
   loading,
   mutating,
   hasFilters,
-  selectedIds,
-  isAllSelected,
-  onToggleSelectAll,
+  selectedCount,
+  isRowSelected,
   onToggleRow,
+  allVisibleSelected,
+  someVisibleSelected,
+  onToggleAllMatching,
   visibleColumns,
   pagination,
   page,
@@ -71,17 +73,17 @@ export function TaxProfitTable({
       description={`Currency: ${currency}`}
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          {selectedIds.length > 0 && (
+          {selectedCount > 0 && (
             <Badge
               variant="outline"
               className="bg-purple-50 text-purple-900 border-purple-200 text-xs font-bold px-2.5 py-1"
             >
-              {selectedIds.length} Selected
+              {selectedCount} Selected
             </Badge>
           )}
           <Button
             type="button"
-            disabled={selectedIds.length === 0 || mutating}
+            disabled={selectedCount === 0 || mutating}
             onClick={onOpenProfitDialog}
             size="sm"
             className={cn(
@@ -95,7 +97,7 @@ export function TaxProfitTable({
           </Button>
           <Button
             type="button"
-            disabled={selectedIds.length === 0 || mutating}
+            disabled={selectedCount === 0 || mutating}
             onClick={onOpenTaxDialog}
             size="sm"
             className={cn(
@@ -154,7 +156,7 @@ export function TaxProfitTable({
 
           <div className="space-y-3 md:hidden">
             {products.map((p) => {
-              const isChecked = selectedIds.includes(p.id)
+              const isChecked = !!isRowSelected?.(p.id)
               const { sellingPrice, finalPrice, marginAmount, marginPercent, baseCost } =
                 resolveRowPricing(p)
 
@@ -168,13 +170,15 @@ export function TaxProfitTable({
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => onToggleRow(p.id)}
-                      className="mt-1 rounded text-purple-600 focus:ring-0"
-                      aria-label={`Select ${p.name}`}
-                    />
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = !allVisibleSelected && someVisibleSelected
+                    }}
+                    onChange={() => onToggleAllMatching?.(!allVisibleSelected)}
+                    aria-label="Select all matching filtered rows"
+                  />
                     {p.image ? (
                       <img
                         src={p.image}
@@ -257,8 +261,11 @@ export function TaxProfitTable({
                   <TableHead className="w-10 px-3 py-3 text-center">
                     <input
                       type="checkbox"
-                      checked={isAllSelected}
-                      onChange={onToggleSelectAll}
+                      checked={allVisibleSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = !allVisibleSelected && someVisibleSelected
+                      }}
+                      onChange={() => onToggleAllMatching?.(!allVisibleSelected)}
                       className="rounded text-purple-600 focus:ring-0"
                     />
                   </TableHead>
@@ -316,7 +323,7 @@ export function TaxProfitTable({
               </TableHeader>
               <TableBody>
                 {products.map((p) => {
-                  const isChecked = selectedIds.includes(p.id)
+                  const isChecked = !!isRowSelected?.(p.id)
                   const { sellingPrice, finalPrice, marginAmount, marginPercent, baseCost } =
                     resolveRowPricing(p)
 

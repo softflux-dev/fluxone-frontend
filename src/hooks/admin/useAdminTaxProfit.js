@@ -160,8 +160,12 @@ export function useAdminTaxProfit({
   )
 
   // Fetch rows for CSV/PDF export (same filters, higher limit)
-  const fetchExportRows = useCallback(
-    async ({ limit: exportLimit = 200 } = {}) => {
+ // Fetch ALL rows for CSV/PDF export (same filters, loops through every page)
+const fetchExportRows = useCallback(
+  async ({ limit: exportLimit = 200 } = {}) => {
+    const all = []
+    let pageNo = 1
+    for (;;) {
       const result = await apiClient.get(endpoints.admin.taxProfit.products, {
         q: q?.trim() || undefined,
         branchId: branchId || undefined,
@@ -170,14 +174,22 @@ export function useAdminTaxProfit({
         productId: productId || undefined,
         variantId: variantId || undefined,
         sort: sort && sort !== 'all' ? sort : undefined,
-        page: 1,
+        page: pageNo,
         limit: exportLimit,
       })
       if (!result.success) return result
-      return { success: true, data: result.data?.items || [] }
-    },
-    [q, branchId, categoryId, subcategoryId, productId, variantId, sort],
-  )
+
+      const rows = result.data?.items || []
+      all.push(...rows)
+
+      const total = result.data?.pagination?.total ?? all.length
+      if (!rows.length || all.length >= total) break
+      pageNo += 1
+    }
+    return { success: true, data: all }
+  },
+  [q, branchId, categoryId, subcategoryId, productId, variantId, sort],
+)
 
   return {
     items,

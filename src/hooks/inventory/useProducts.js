@@ -143,9 +143,9 @@ export function useProducts(initialFilters = EMPTY_FILTERS, options = {}) {
   )
 
   const exportCsv = useCallback(
-    () => asResult(dispatch(exportProductsCsv()).unwrap()),
-    [dispatch],
-  )
+  (opts) => asResult(dispatch(exportProductsCsv(opts)).unwrap()),
+  [dispatch],
+)
 
   const importProducts = useCallback(
     (rows) => asResult(dispatch(importProductsThunk(rows)).unwrap()),

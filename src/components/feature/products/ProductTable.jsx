@@ -144,8 +144,13 @@ export function ProductTable({
   loading = false,
   pagination,
   statusUpdatingId = null,
-  selectedIds = [],
-  onSelectedIdsChange,
+  selectedCount = 0,
+  isRowSelected,
+  onToggleRow,
+  allVisibleSelected = false,
+  someVisibleSelected = false,
+  onToggleAllMatching,
+  onClearSelection,
   bulkDeleting = false,
   onBulkDelete,
   onPageChange,
@@ -166,49 +171,22 @@ export function ProductTable({
   const total = pagination?.total ?? list.length
   const pageSize = pagination?.limit || 8
 
-  const pageIds = useMemo(() => list.map((row) => row.id).filter(Boolean), [list])
-  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
-  const selectedOnPage = pageIds.filter((id) => selectedSet.has(id))
-  const allPageSelected = pageIds.length > 0 && selectedOnPage.length === pageIds.length
-  const somePageSelected = selectedOnPage.length > 0 && !allPageSelected
-  const selectionCount = selectedIds.length
-
-  function toggleOne(id) {
-    if (!id || !onSelectedIdsChange) return
-    if (selectedSet.has(id)) {
-      onSelectedIdsChange(selectedIds.filter((entry) => entry !== id))
-    } else {
-      onSelectedIdsChange([...selectedIds, id])
-    }
-  }
-
-  function toggleAllPage() {
-    if (!onSelectedIdsChange) return
-    if (allPageSelected) {
-      onSelectedIdsChange(selectedIds.filter((id) => !pageIds.includes(id)))
-      return
-    }
-    const merged = new Set(selectedIds)
-    for (const id of pageIds) merged.add(id)
-    onSelectedIdsChange([...merged])
-  }
-
   const selectAllCheckbox = (
     <Checkbox
-      checked={allPageSelected}
+      checked={allVisibleSelected}
       ref={(el) => {
-        if (el) el.indeterminate = somePageSelected
+        if (el) el.indeterminate = !allVisibleSelected && someVisibleSelected
       }}
-      onChange={toggleAllPage}
-      aria-label="Select all products on this page"
+      onChange={() => onToggleAllMatching?.(!allVisibleSelected)}
+      aria-label="Select all matching products"
     />
   )
 
   const catalogActions =
-    selectionCount > 0 ? (
+    selectedCount > 0 ? (
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium text-slate-600 sm:text-sm">
-          {selectionCount} selected
+          {selectedCount} selected
         </span>
         <Button
           type="button"
@@ -216,7 +194,7 @@ export function ProductTable({
           size="sm"
           className="cursor-pointer"
           disabled={bulkDeleting}
-          onClick={() => onSelectedIdsChange?.([])}
+          onClick={() => onClearSelection?.()}
         >
           Clear
         </Button>
@@ -266,8 +244,8 @@ export function ProductTable({
                 <div className="flex items-start gap-3">
                   <Checkbox
                     className="mt-1"
-                    checked={selectedSet.has(row.id)}
-                    onChange={() => toggleOne(row.id)}
+                  checked={!!isRowSelected?.(row.id)}
+onChange={() => onToggleRow?.(row.id)}
                     aria-label={`Select ${row.name || 'product'}`}
                   />
                   <ProductImageCell src={row.imageUrl} name={row.name} />
@@ -442,8 +420,8 @@ export function ProductTable({
                       {/* Left sticky */}
                       <TableSelectCell sticky>
                         <Checkbox
-                          checked={selectedSet.has(row.id)}
-                          onChange={() => toggleOne(row.id)}
+                          checked={!!isRowSelected?.(row.id)}
+                          onChange={() => onToggleRow?.(row.id)}
                           aria-label={`Select ${row.name || 'product'}`}
                         />
                       </TableSelectCell>

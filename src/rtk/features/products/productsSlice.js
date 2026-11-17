@@ -293,18 +293,29 @@ export const deleteProduct = createAsyncThunk(
 
 export const exportProductsCsv = createAsyncThunk(
   'products/exportCsv',
-  async (_, { rejectWithValue }) => {
-    // Server flat rows (parents + variants + bundle items) → styled Excel
+  async (opts, { rejectWithValue }) => {
     const result = await apiClient.get(endpoints.products.export)
     if (!result.success) return rejectWithValue(result.error || 'Export failed')
-    const rows = Array.isArray(result.data?.rows) ? result.data.rows : []
+    let rows = Array.isArray(result.data?.rows) ? result.data.rows : []
+
+    const barcodes = opts?.barcodes
+    if (barcodes?.length) {
+      const wanted = new Set(barcodes.map(String))
+      const refs = new Set(
+        rows
+          .filter((r) => r.rowKind === 'product' && wanted.has(String(r.barcode)))
+          .map((r) => r.importRef)
+          .filter(Boolean),
+      )
+      // keep the product row + its variant rows + its bundle item rows
+      rows = rows.filter((r) => refs.has(r.importRef) || refs.has(r.parentRef))
+    }
+
     if (!rows.length) return rejectWithValue('No products to export')
     const { exported } = exportProductsToStyledExcel(rows)
     return {
       success: true,
-      data: {
-        exported: result.data?.exported ?? exported,
-      },
+      data: { exported: barcodes?.length ? barcodes.length : (result.data?.exported ?? exported) },
     }
   },
 )

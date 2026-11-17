@@ -26,10 +26,10 @@ import { toastSuccess, toastError } from '@/lib/toast'
 import { validatePercentage } from '@/lib/validation/formValidators'
 import { exportTaxProfitCsv, exportTaxProfitPdf } from '@/lib/export/taxProfitExport'
 import { Settings } from 'lucide-react'
+import { useMatchingSelection } from '@/hooks/shared/useMatchingSelection'
 
 export function TaxProfitPage() {
   const { currency, formatPlain } = useCurrency()
-  const [selectedIds, setSelectedIds] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedQ = useDebouncedValue(searchQuery.trim(), 300)
   const [selectedBranchId, setSelectedBranchId] = useState('')
@@ -66,19 +66,6 @@ export function TaxProfitPage() {
   })
   const [colMenuOpen, setColMenuOpen] = useState(false)
 
-  useEffect(() => {
-    setPage(1)
-    setSelectedIds([])
-  }, [
-    debouncedQ,
-    selectedBranchId,
-    selectedCategoryId,
-    selectedSubcategoryId,
-    selectedProductId,
-    selectedVariantId,
-    presetFilter,
-  ])
-
   const {
     items: products,
     meta,
@@ -101,6 +88,16 @@ export function TaxProfitPage() {
     page,
     limit,
   })
+
+  const selection = useMatchingSelection({
+  total: pagination.total || 0,
+  items: products,
+  resetKey: JSON.stringify([
+    debouncedQ, selectedBranchId, selectedCategoryId,
+    selectedSubcategoryId, selectedProductId, selectedVariantId, presetFilter,
+  ]),
+})
+
 
   useEffect(() => {
     if (meta?.defaults) {
@@ -192,22 +189,6 @@ export function TaxProfitPage() {
     if (!showVariantFilter && selectedVariantId) setSelectedVariantId('')
   }, [showVariantFilter, selectedVariantId])
 
-  const pageIds = products.map((p) => p.id)
-  const isAllSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id))
-
-  function handleToggleSelectAll() {
-    if (isAllSelected) {
-      setSelectedIds((prev) => prev.filter((id) => !pageIds.includes(id)))
-      return
-    }
-    setSelectedIds((prev) => [...new Set([...prev, ...pageIds])])
-  }
-
-  function handleToggleRow(id) {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    )
-  }
 
   function handleOpenDefaultTaxProfit() {
     setDefaultTaxValue(String(meta?.defaults?.defaultTaxPercent ?? 0))
@@ -256,6 +237,18 @@ export function TaxProfitPage() {
     )
     setDefaultTaxProfitDialogOpen(false)
   }
+  
+  async function resolveSelectedIds() {
+  if (!selection.selectAllMatching) return [...selection.selectedIds]
+  const result = await fetchExportRows({ limit: 200 })
+  if (!result.success) {
+    toastError(result.error || 'Failed to load selected products')
+    return null
+  }
+  return (result.data || [])
+    .map((p) => p.id)
+    .filter((id) => !selection.deselectedIds.has(id))
+}
 
   async function handleApplyBulkProfit(e) {
     e.preventDefault()
@@ -268,13 +261,10 @@ export function TaxProfitPage() {
       toastError(err)
       return
     }
-    if (selectedIds.length === 0) {
-      toastError('Select at least one product')
-      return
-    }
-
-    const profitNum = Number(bulkProfitValue)
-    const result = await bulkSetProfit(selectedIds, profitNum)
+    if (selection.selectedCount === 0) { toastError('Select at least one product'); return }
+   const ids = await resolveSelectedIds()
+    if (!ids) return
+      const result = await bulkSetProfit(ids, profitNum) 
     if (!result.success) {
       toastError(result.error || 'Failed to update profit %')
       return
@@ -283,7 +273,7 @@ export function TaxProfitPage() {
     toastSuccess(
       `Updated Profit to ${profitNum}% across ${result.data?.updated ?? selectedIds.length} selected items`,
     )
-    setSelectedIds([])
+    selection.toggleAllMatching(false)                      
     setProfitDialogOpen(false)
   }
 
@@ -298,13 +288,10 @@ export function TaxProfitPage() {
       toastError(err)
       return
     }
-    if (selectedIds.length === 0) {
-      toastError('Select at least one product')
-      return
-    }
-
-    const taxNum = Number(bulkTaxValue)
-    const result = await bulkSetTax(selectedIds, taxNum)
+    if (selection.selectedCount === 0) { toastError('Select at least one product'); return }
+    const ids = await resolveSelectedIds()
+    if (!ids) return
+    const result = await  bulkSetTax(ids, taxNum) 
     if (!result.success) {
       toastError(result.error || 'Failed to update tax %')
       return
@@ -313,32 +300,44 @@ export function TaxProfitPage() {
     toastSuccess(
       `Updated Tax to ${taxNum}% across ${result.data?.updated ?? selectedIds.length} selected items`,
     )
-    setSelectedIds([])
+    selection.toggleAllMatching(false) 
     setTaxDialogOpen(false)
   }
 
   async function handleExport(kind) {
-    setExporting(true)
-    try {
-      const result = await fetchExportRows({ limit: 200 })
-      if (!result.success) {
-        toastError(result.error || 'Failed to load rows for export')
-        return
-      }
-      const items = result.data || []
-      if (!items.length) {
-        toastError('No products to export for the current filters')
-        return
-      }
-      if (kind === 'csv') exportTaxProfitCsv({ items, currency })
-      else exportTaxProfitPdf({ items, currency })
-      toastSuccess(kind === 'csv' ? 'CSV exported' : 'PDF exported')
-    } catch (err) {
-      toastError(err?.message || 'Export failed')
-    } finally {
-      setExporting(false)
+  setExporting(true)
+
+  try {
+    const result = await fetchExportRows({ limit: 200 })
+    if (!result.success) {
+      toastError(result.error || 'Failed to load rows for export')
+      return
     }
+
+    const allRows = result.data || []
+
+    // Only the selected rows (if nothing is selected, export everything as before)
+    let items = allRows
+    if (selection.selectedCount > 0) {
+      items = selection.selectAllMatching
+        ? allRows.filter((p) => !selection.deselectedIds.has(p.id))
+        : allRows.filter((p) => selection.selectedIds.has(p.id))
+    }
+
+    if (!items.length) {
+      toastError('No products to export for the current filters')
+      return
+    }
+
+    if (kind === 'csv') exportTaxProfitCsv({ items, currency })
+    else exportTaxProfitPdf({ items, currency })
+    toastSuccess(kind === 'csv' ? 'CSV exported' : 'PDF exported')
+  } catch (err) {
+    toastError(err?.message || 'Export failed')
+  } finally {
+    setExporting(false)
   }
+}
 
   return (
     <div className="space-y-6 pb-8">
@@ -420,25 +419,27 @@ export function TaxProfitPage() {
 
       <MotionReveal delay={0.15}>
         <TaxProfitTable
-          currency={currency}
-          formatPlain={formatPlain}
-          products={products}
-          loading={loading}
-          mutating={mutating}
-          hasFilters={hasFilters}
-          selectedIds={selectedIds}
-          isAllSelected={isAllSelected}
-          onToggleSelectAll={handleToggleSelectAll}
-          onToggleRow={handleToggleRow}
-          visibleColumns={visibleColumns}
-          pagination={pagination}
-          page={page}
-          limit={limit}
-          setPage={setPage}
-          setLimit={setLimit}
-          onOpenProfitDialog={() => setProfitDialogOpen(true)}
-          onOpenTaxDialog={() => setTaxDialogOpen(true)}
-        />
+            currency={currency}
+            formatPlain={formatPlain}
+            products={products}
+            loading={loading}
+            mutating={mutating}
+            hasFilters={hasFilters}
+            selectedCount={selection.selectedCount}
+            isRowSelected={selection.isRowSelected}
+            onToggleRow={selection.toggleRow}
+            allVisibleSelected={selection.allVisibleSelected}
+            someVisibleSelected={selection.someVisibleSelected}
+            onToggleAllMatching={selection.toggleAllMatching}
+            visibleColumns={visibleColumns}
+            pagination={pagination}
+            page={page}
+            limit={limit}
+            setPage={setPage}
+            setLimit={setLimit}
+            onOpenProfitDialog={() => setProfitDialogOpen(true)}
+            onOpenTaxDialog={() => setTaxDialogOpen(true)}
+/>
       </MotionReveal>
 
       <TaxProfitDefaultsDialog
@@ -455,7 +456,7 @@ export function TaxProfitPage() {
       <TaxProfitBulkProfitDialog
         open={profitDialogOpen}
         onOpenChange={setProfitDialogOpen}
-        selectedCount={selectedIds.length}
+        selectedCount={selection.selectedCount}
         bulkProfitValue={bulkProfitValue}
         setBulkProfitValue={setBulkProfitValue}
         mutating={mutating}
@@ -465,7 +466,7 @@ export function TaxProfitPage() {
       <TaxProfitBulkTaxDialog
         open={taxDialogOpen}
         onOpenChange={setTaxDialogOpen}
-        selectedCount={selectedIds.length}
+        selectedCount={selection.selectedCount}
         bulkTaxValue={bulkTaxValue}
         setBulkTaxValue={setBulkTaxValue}
         mutating={mutating}
