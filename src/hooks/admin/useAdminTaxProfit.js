@@ -25,6 +25,8 @@ export function useAdminTaxProfit({
   subcategoryId = '',
   productId = '',
   variantId = '',
+  from = '',
+  to = '',
   sort = 'all',
   page = 1,
   limit = ADMIN_TAX_PROFIT_PAGE_SIZE,
@@ -75,6 +77,8 @@ export function useAdminTaxProfit({
       subcategoryId: subcategoryId || undefined,
       productId: productId || undefined,
       variantId: variantId || undefined,
+      from: from || undefined,
+      to: to || undefined,
       sort: sort && sort !== 'all' ? sort : undefined,
       page,
       limit,
@@ -97,7 +101,7 @@ export function useAdminTaxProfit({
     )
     setLoading(false)
     return result
-  }, [q, branchId, categoryId, subcategoryId, productId, variantId, sort, page, limit])
+  }, [q, branchId, categoryId, subcategoryId, productId, variantId, from, to, sort, page, limit])
 
   useEffect(() => {
     void loadMeta()
@@ -173,6 +177,8 @@ const fetchExportRows = useCallback(
         subcategoryId: subcategoryId || undefined,
         productId: productId || undefined,
         variantId: variantId || undefined,
+      from: from || undefined,
+      to: to || undefined,
         sort: sort && sort !== 'all' ? sort : undefined,
         page: pageNo,
         limit: exportLimit,
@@ -188,7 +194,7 @@ const fetchExportRows = useCallback(
     }
     return { success: true, data: all }
   },
-  [q, branchId, categoryId, subcategoryId, productId, variantId, sort],
+  [q, branchId, categoryId, subcategoryId, productId, variantId, from, to, sort],
 )
 
   return {

@@ -26,6 +26,7 @@ import { toastSuccess, toastError } from '@/lib/toast'
 import { validatePercentage } from '@/lib/validation/formValidators'
 import { exportTaxProfitCsv, exportTaxProfitPdf } from '@/lib/export/taxProfitExport'
 import { Settings } from 'lucide-react'
+import { DateRangeFields } from '@/components/shared/DateRangeFields'
 import { useMatchingSelection } from '@/hooks/shared/useMatchingSelection'
 
 export function TaxProfitPage() {
@@ -38,6 +39,7 @@ export function TaxProfitPage() {
   const [selectedProductId, setSelectedProductId] = useState('')
   const [selectedVariantId, setSelectedVariantId] = useState('')
   const [presetFilter, setPresetFilter] = useState('all')
+  const [dateRange, setDateRange] = useState({ from: '', to: '' })
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(ADMIN_TAX_PROFIT_PAGE_SIZE)
   const [exporting, setExporting] = useState(false)
@@ -58,11 +60,13 @@ export function TaxProfitPage() {
     barcode: true,
     category: true,
     baseCost: true,
-    profitPct: true,
-    taxPct: true,
     sellingPrice: true,
-    margin: true,
+    tax: true,
     finalPrice: true,
+    profit: true,
+    unitsSold: true,
+    totalRevenue: true,
+    totalProfit: true,
   })
   const [colMenuOpen, setColMenuOpen] = useState(false)
 
@@ -84,6 +88,8 @@ export function TaxProfitPage() {
     subcategoryId: selectedSubcategoryId,
     productId: selectedProductId,
     variantId: selectedVariantId,
+    from: dateRange.from,
+    to: dateRange.to,
     sort: presetFilter,
     page,
     limit,
@@ -95,6 +101,7 @@ export function TaxProfitPage() {
   resetKey: JSON.stringify([
     debouncedQ, selectedBranchId, selectedCategoryId,
     selectedSubcategoryId, selectedProductId, selectedVariantId, presetFilter,
+    dateRange.from, dateRange.to,
   ]),
 })
 
@@ -264,14 +271,15 @@ export function TaxProfitPage() {
     if (selection.selectedCount === 0) { toastError('Select at least one product'); return }
    const ids = await resolveSelectedIds()
     if (!ids) return
-      const result = await bulkSetProfit(ids, profitNum) 
+      const profitNum = Number(bulkProfitValue)
+    const result = await bulkSetProfit(ids, profitNum)
     if (!result.success) {
       toastError(result.error || 'Failed to update profit %')
       return
     }
 
     toastSuccess(
-      `Updated Profit to ${profitNum}% across ${result.data?.updated ?? selectedIds.length} selected items`,
+      `Updated Profit to ${profitNum}% across ${result.data?.updated ?? ids.length} selected items`,
     )
     selection.toggleAllMatching(false)                      
     setProfitDialogOpen(false)
@@ -291,14 +299,15 @@ export function TaxProfitPage() {
     if (selection.selectedCount === 0) { toastError('Select at least one product'); return }
     const ids = await resolveSelectedIds()
     if (!ids) return
-    const result = await  bulkSetTax(ids, taxNum) 
+    const taxNum = Number(bulkTaxValue)
+    const result = await bulkSetTax(ids, taxNum)
     if (!result.success) {
       toastError(result.error || 'Failed to update tax %')
       return
     }
 
     toastSuccess(
-      `Updated Tax to ${taxNum}% across ${result.data?.updated ?? selectedIds.length} selected items`,
+      `Updated Tax to ${taxNum}% across ${result.data?.updated ?? ids.length} selected items`,
     )
     selection.toggleAllMatching(false) 
     setTaxDialogOpen(false)
@@ -379,6 +388,29 @@ export function TaxProfitPage() {
           {error}
         </div>
       ) : null}
+
+      <MotionReveal delay={0.02}>
+        <div className="flex flex-wrap items-center gap-2">
+          <DateRangeFields
+            compact
+            idPrefix="tax-profit"
+            from={dateRange.from}
+            to={dateRange.to}
+            max={new Date().toISOString().slice(0, 10)}
+            onChange={(next) => {
+              setDateRange(next)
+              setPage(1)
+            }}
+          />
+          {dateRange.from || dateRange.to ? (
+            <Button type="button" variant="outline" size="sm" onClick={() => { setDateRange({ from: '', to: '' }); setPage(1) }}>
+              Clear dates
+            </Button>
+          ) : (
+            <span className="text-xs text-slate-500">All time</span>
+          )}
+        </div>
+      </MotionReveal>
 
       <MotionReveal delay={0.05}>
         <TaxProfitPresetPills

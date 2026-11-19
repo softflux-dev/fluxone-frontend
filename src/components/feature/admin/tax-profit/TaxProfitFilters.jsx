@@ -10,12 +10,14 @@ const COLUMN_LABELS = {
   name: 'Product',
   barcode: 'Barcode',
   category: 'Category',
-  baseCost: 'Purchase',
-  profitPct: 'Profit %',
-  taxPct: 'Tax %',
-  sellingPrice: 'Selling',
-  margin: 'Margin',
-  finalPrice: 'Final (incl. tax)',
+  baseCost: 'Purchase Price',
+  sellingPrice: 'Selling Price',
+  tax: 'Tax % · Tax Amount',
+  finalPrice: 'Final Price (incl. Tax)',
+  profit: 'Profit % · Profit Amount',
+  unitsSold: 'Total Units Sold',
+  totalRevenue: 'Total Revenue',
+  totalProfit: 'Total Profit',
 }
 
 // Shared select chrome — h-10 + 8px radius (QA Bug 2)
