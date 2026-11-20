@@ -10,14 +10,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Button } from '@/components/ui/button'
 import { RATING_BANDS } from '@/lib/branch/performanceRatings'
 import { formatScorePercent } from '@/lib/branch/performanceScales'
 import { formatDateLine, formatDateTimeInline } from '@/lib/formatDateTime'
 
-// Static range presets (TL) — filter is applied on the server
-const RANGES = ['3M', '6M', '12M', 'All']
-
+// Chart tooltip for a trend point
 function ChartTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload
@@ -63,12 +60,7 @@ function ActiveDot({ cx, cy, payload, onPointClick }) {
   )
 }
 
-export function PerformanceTrendChart({
-  chart,
-  range,
-  onRangeChange,
-  onPointClick,
-}) {
+export function PerformanceTrendChart({ chart, onPointClick }) {
   // Unique X key per evaluation so same-day scores do not collide in Recharts
   const data = useMemo(() => {
     return (chart?.points || []).map((p, index) => ({
@@ -94,19 +86,6 @@ export function PerformanceTrendChart({
         <div>
           <h2 className="text-sm font-semibold text-slate-900">Score trend</h2>
           <p className="text-xs text-slate-500">Total score over time (0–100%)</p>
-        </div>
-        <div className="flex rounded-lg border border-border p-0.5">
-          {RANGES.map((r) => (
-            <Button
-              key={r}
-              size="sm"
-              variant={range === r ? 'brand' : 'ghost'}
-              className="h-8 px-2.5 text-xs"
-              onClick={() => onRangeChange?.(r)}
-            >
-              {r}
-            </Button>
-          ))}
         </div>
       </div>
 

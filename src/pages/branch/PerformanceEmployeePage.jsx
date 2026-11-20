@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import { MotionHeader, MotionReveal } from '@/components/shared/MotionReveal'
 import { PerformanceDetailHeader } from '@/components/feature/branch/performance/PerformanceDetailHeader'
 import { PerformanceDetailSkeleton } from '@/components/feature/branch/performance/PerformanceDetailSkeleton'
@@ -9,10 +10,24 @@ import { PerformanceCriteriaBreakdown } from '@/components/feature/branch/perfor
 import { PerformanceHistoryTimeline } from '@/components/feature/branch/performance/PerformanceHistoryTimeline'
 import { ScoreEmployeeDialog } from '@/components/feature/branch/performance/ScoreEmployeeDialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { PATHS } from '@/router/paths'
 import { useBranchPerformanceDetail } from '@/hooks/branch/useBranchPerformanceDetail'
 
 const SLOW_LOAD_MS = 8000
+
+const dateInputClasses =
+  'w-44 sm:w-48 px-3 tabular-nums [&::-webkit-datetime-edit]:px-1 [&::-webkit-datetime-edit-fields-wrapper]:gap-0.5 [&::-webkit-calendar-picker-indicator]:ml-1.5 [&::-webkit-calendar-picker-indicator]:cursor-pointer'
+
+// Default range: last 12 months (matches the previous default preset).
+const today = new Date()
+const defaultEndInput = today.toISOString().split('T')[0]
+const defaultStartInput = new Date(
+  today.getFullYear(),
+  today.getMonth() - 12,
+  today.getDate(),
+).toISOString().split('T')[0]
 
 export function PerformanceEmployeePage() {
   const { staffId } = useParams()
@@ -22,7 +37,14 @@ export function PerformanceEmployeePage() {
     useBranchPerformanceDetail()
   const [error, setError] = useState(null)
   const [slow, setSlow] = useState(false)
-  const [range, setRange] = useState('12M')
+  const [applyingFilter, setApplyingFilter] = useState(false)
+  const [startDate, setStartDate] = useState(defaultStartInput)
+  const [endDate, setEndDate] = useState(defaultEndInput)
+  const [dateError, setDateError] = useState(null)
+  // Refs keep the latest picker values without making the mount effect
+  // re-run on every picker change (explicit Apply only).
+  const startDateRef = useRef(startDate)
+  const endDateRef = useRef(endDate)
   const [timelinePage, setTimelinePage] = useState(1)
   const [expandedId, setExpandedId] = useState(null)
   const [highlightId, setHighlightId] = useState(null)
@@ -39,12 +61,13 @@ export function PerformanceEmployeePage() {
     return `${PATHS.branch.staff}?${params.toString()}`
   }, [searchParams])
 
-  const loadDetail = useCallback(async () => {
+  const loadDetail = useCallback(async (startDate, endDate) => {
     if (!staffId) return
     setError(null)
     setSlow(false)
     const res = await loadEmployeeDetail(staffId, {
-      range,
+      startDate,
+      endDate,
       timelinePage,
       timelineLimit: 10,
     })
@@ -52,11 +75,47 @@ export function PerformanceEmployeePage() {
     if (!res.success) {
       setError(res.error || 'Failed to load performance detail')
     }
-  }, [staffId, range, timelinePage, loadEmployeeDetail])
+  }, [staffId, timelinePage, loadEmployeeDetail])
+
+  const handleApply = useCallback(async () => {
+    if (startDate && endDate && endDate < startDate) {
+      setDateError('End date must be on or after start date')
+      return
+    }
+    setDateError(null)
+    setTimelinePage(1)
+    setApplyingFilter(true)
+    try {
+      await loadDetail(startDate, endDate)
+    } finally {
+      setApplyingFilter(false)
+    }
+  }, [startDate, endDate, loadDetail])
+
+  const handleReset = useCallback(async () => {
+    setStartDate(defaultStartInput)
+    setEndDate(defaultEndInput)
+    setDateError(null)
+    setTimelinePage(1)
+    setApplyingFilter(true)
+    try {
+      await loadDetail(defaultStartInput, defaultEndInput)
+    } finally {
+      setApplyingFilter(false)
+    }
+  }, [loadDetail])
 
   useEffect(() => {
-    void loadDetail()
+    // Intentional: only fetch on mount. Date changes are applied explicitly via Apply.
+    void loadDetail(startDateRef.current, endDateRef.current)
   }, [loadDetail])
+
+  // Keep refs in sync with the latest picker values (refs are not tracked by
+  // exhaustive-deps, so the mount effect above does not re-run on picker change).
+  useEffect(() => {
+    startDateRef.current = startDate
+    endDateRef.current = endDate
+  }, [startDate, endDate])
 
   useEffect(() => {
     void loadScales()
@@ -97,7 +156,7 @@ export function PerformanceEmployeePage() {
       <div className="space-y-4 py-10 text-center">
         <p className="text-sm font-medium text-red-600">{error}</p>
         <p className="text-xs text-slate-500">
-          Something went wrong while loading this employee&apos;s performance.
+          Something went wrong while loading this employee's performance.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Button type="button" variant="brand" onClick={() => void loadDetail()}>
@@ -146,13 +205,77 @@ export function PerformanceEmployeePage() {
           </MotionReveal>
 
           <MotionReveal delay={0.06}>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2.5">
+                  <Label
+                    htmlFor="trend-start-date"
+                    className="whitespace-nowrap text-xs font-medium text-slate-600"
+                  >
+                    Start date
+                  </Label>
+                  <Input
+                    id="trend-start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value)
+                      if (dateError) setDateError(null)
+                    }}
+                    className={dateInputClasses}
+                  />
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Label
+                    htmlFor="trend-end-date"
+                    className="whitespace-nowrap text-xs font-medium text-slate-600"
+                  >
+                    End date
+                  </Label>
+                  <Input
+                    id="trend-end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      setEndDate(e.target.value)
+                      if (dateError) setDateError(null)
+                    }}
+                    className={dateInputClasses}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  onClick={() => void handleApply()}
+                  disabled={Boolean(dateError) || applyingFilter}
+                  className="text-sm"
+                >
+                  {applyingFilter ? (
+                    <>
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      Applying...
+                    </>
+                  ) : (
+                    'Apply Filter'
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleReset()}
+                  disabled={applyingFilter}
+                  className="text-sm"
+                >
+                  Reset
+                </Button>
+              </div>
+              {dateError ? (
+                <p className="w-full text-xs font-medium text-red-600">{dateError}</p>
+              ) : null}
+            </div>
             <PerformanceTrendChart
               chart={detail.chart}
-              range={range}
-              onRangeChange={(next) => {
-                setRange(next)
-                setTimelinePage(1)
-              }}
               onPointClick={handlePointClick}
             />
           </MotionReveal>
