@@ -56,6 +56,10 @@ function detailHref(staffId, searchQuery, filterDesignation) {
   return qs ? `${base}?${qs}` : base
 }
 
+function isEmployeeActive(emp) {
+  return String(emp?.status || '').toLowerCase() === 'active'
+}
+
 export function StaffPerformanceTab({
   designations = [],
   createOpen = false,
@@ -258,31 +262,54 @@ export function StaffPerformanceTab({
 
   const renderTrend = (emp) => {
     const t = trendDisplay(emp.trendDirection, emp.trendDelta)
-    return <span className={t.className}>{t.text}</span>
+    return <span className={`${t.className} whitespace-nowrap text-xs`}>{t.text}</span>
   }
 
   const renderLastScored = (emp) => {
     if (!emp.lastScoredAt) {
-      return <span className="text-slate-400">Not scored yet</span>
+      return <span className="whitespace-nowrap text-xs text-slate-400">Not scored yet</span>
     }
     const relative = formatRelativeScored(emp.lastScoredAt)
     return (
-      <span title={relative ? `${formatDateLine(emp.lastScoredAt)} (${relative})` : undefined}>
+      <span
+        className="whitespace-nowrap text-xs"
+        title={relative ? `${formatDateLine(emp.lastScoredAt)} (${relative})` : undefined}
+      >
         {formatDateLine(emp.lastScoredAt)}
       </span>
     )
   }
 
+  // Compact status pill (dot + label): green = Active, red = Inactive
+  const renderStatusBadge = (emp) => {
+    if (!emp.status) return <span className="text-xs text-slate-400">—</span>
+    const active = isEmployeeActive(emp)
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${
+          active
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : 'border-rose-200 bg-rose-50 text-rose-700'
+        }`}
+      >
+        <span
+          className={`size-1.5 shrink-0 rounded-full ${active ? 'bg-emerald-500' : 'bg-rose-500'}`}
+        />
+        {active ? 'Active' : 'Inactive'}
+      </span>
+    )
+  }
+
   const renderNameCell = (emp) => (
-    <div className="flex min-w-0 items-center gap-3">
+    <div className="flex min-w-0 items-center gap-2">
       <UserAvatar
         name={emp.fullName}
         imageUrl={emp.imageUrl}
-        className="size-9 shrink-0"
+        className="size-7 shrink-0"
       />
       <Link
         to={detailHref(emp.staffId, searchQuery, filterDesignation)}
-        className="truncate font-semibold text-purple-700 hover:underline"
+        className="truncate text-xs font-semibold text-purple-700 hover:underline"
       >
         {emp.fullName}
       </Link>
@@ -368,7 +395,10 @@ export function StaffPerformanceTab({
                         >
                           {displayStaffRef(emp)}
                         </p>
-                        <p className="mt-0.5 text-xs text-slate-500">{emp.designation || '—'}</p>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                          <span>{emp.designation || '—'}</span>
+                          {renderStatusBadge(emp)}
+                        </div>
                         <p className="mt-1 text-xs text-slate-500">
                           Trend: {renderTrend(emp)} · {renderLastScored(emp)}
                         </p>
@@ -398,92 +428,116 @@ export function StaffPerformanceTab({
                         View Details
                       </Link>
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="brand"
-                      className="h-8 flex-1 text-xs"
-                      onClick={() => openScoringModal(emp)}
-                    >
-                      Score Employee
-                    </Button>
+                    {isEmployeeActive(emp) ? (
+                      <Button
+                        size="sm"
+                        variant="brand"
+                        className="h-8 flex-1 text-xs"
+                        onClick={() => openScoringModal(emp)}
+                      >
+                        Score Employee
+                      </Button>
+                    ) : null}
                   </div>
                 </DataCard>
               ))}
               desktop={
-                <Table>
-                  <TableHeader>
-                    <TableRow className="text-xs text-slate-500 uppercase">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Staff ID</TableHead>
-                      <TableHead>Designation</TableHead>
-                      <TableHead>Score</TableHead>
-                      <TableHead>Trend</TableHead>
-                      <TableHead>Rating</TableHead>
-                      <TableHead>
-                        <button
-                          type="button"
-                          className="inline-flex cursor-pointer items-center gap-1 hover:text-slate-800"
-                          onClick={toggleLastScoredSort}
-                          title="Sort by last scored"
-                        >
-                          Last Scored
-                          <ArrowDownUp className="size-3.5" />
-                        </button>
-                      </TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rosterPaging.slice.map((emp) => (
-                      <TableRow key={emp.staffId}>
-                        <TableCell>{renderNameCell(emp)}</TableCell>
-                        <TableCell>
-                          <span
-                            title={emp.staffId || undefined}
-                            className="font-mono text-xs font-bold text-purple-800 select-all"
+                <div className="w-full overflow-x-auto">
+                  <Table className="w-full text-xs">
+                    <TableHeader>
+                      <TableRow className="h-9 text-[11px] text-slate-500 uppercase">
+                        <TableHead className="px-2.5 py-1.5">Name</TableHead>
+                        <TableHead className="px-2.5 py-1.5 whitespace-nowrap">Staff ID</TableHead>
+                        <TableHead className="px-2.5 py-1.5">Designation</TableHead>
+                        <TableHead className="w-24 px-2.5 py-1.5 whitespace-nowrap">
+                          Status
+                        </TableHead>
+                        <TableHead className="px-2.5 py-1.5 whitespace-nowrap">Score</TableHead>
+                        <TableHead className="px-2.5 py-1.5 whitespace-nowrap">Trend</TableHead>
+                        <TableHead className="px-2.5 py-1.5 whitespace-nowrap">Rating</TableHead>
+                        <TableHead className="px-2.5 py-1.5 whitespace-nowrap">
+                          <button
+                            type="button"
+                            className="inline-flex cursor-pointer items-center gap-1 hover:text-slate-800"
+                            onClick={toggleLastScoredSort}
+                            title="Sort by last scored"
                           >
-                            {displayStaffRef(emp)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-slate-600">{emp.designation || '—'}</TableCell>
-                        <TableCell className="font-semibold text-slate-800">
-                          {emp.score == null ? '—' : `${Number(emp.score).toFixed(0)} / 100`}
-                        </TableCell>
-                        <TableCell>{renderTrend(emp)}</TableCell>
-                        <TableCell>
-                          {emp.ratingLabel ? (
-                            <Badge variant="outline" className={ratingBadgeClass(emp.ratingLabel)}>
-                              <Star className="mr-1 size-3.5 fill-current" />
-                              {emp.ratingLabel}
-                            </Badge>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-slate-600">
-                          {renderLastScored(emp)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1.5">
-                            <Button size="sm" variant="outline" className="h-8 text-xs" asChild>
-                              <Link to={detailHref(emp.staffId, searchQuery, filterDesignation)}>
-                                View Details
-                              </Link>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="brand"
-                              className="h-8 text-xs"
-                              onClick={() => openScoringModal(emp)}
-                            >
-                              Score Employee
-                            </Button>
-                          </div>
-                        </TableCell>
+                            Last Scored
+                            <ArrowDownUp className="size-3" />
+                          </button>
+                        </TableHead>
+                        <TableHead className="px-2.5 py-1.5 whitespace-nowrap">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {rosterPaging.slice.map((emp) => (
+                        <TableRow key={emp.staffId} className="h-11">
+                          <TableCell className="max-w-44 px-2.5 py-2">{renderNameCell(emp)}</TableCell>
+                          <TableCell className="px-2.5 py-2 whitespace-nowrap">
+                            <span
+                              title={emp.staffId || undefined}
+                              className="font-mono text-[11px] font-bold text-purple-800 select-all"
+                            >
+                              {displayStaffRef(emp)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="max-w-36 truncate px-2.5 py-2 text-xs text-slate-600">
+                            {emp.designation || '—'}
+                          </TableCell>
+                          <TableCell className="w-24 px-2.5 py-2 whitespace-nowrap">
+                            {renderStatusBadge(emp)}
+                          </TableCell>
+                          <TableCell className="px-2.5 py-2 text-xs font-semibold whitespace-nowrap text-slate-800">
+                            {emp.score == null ? '—' : `${Number(emp.score).toFixed(0)} / 100`}
+                          </TableCell>
+                          <TableCell className="px-2.5 py-2 whitespace-nowrap">
+                            {renderTrend(emp)}
+                          </TableCell>
+                          <TableCell className="px-2.5 py-2 whitespace-nowrap">
+                            {emp.ratingLabel ? (
+                              <Badge
+                                variant="outline"
+                                className={`${ratingBadgeClass(emp.ratingLabel)} px-1.5 py-0.5 text-[11px]`}
+                              >
+                                <Star className="mr-1 size-3 fill-current" />
+                                {emp.ratingLabel}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-2.5 py-2 whitespace-nowrap text-slate-600">
+                            {renderLastScored(emp)}
+                          </TableCell>
+                          <TableCell className="px-2.5 py-2 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-[11px]"
+                                asChild
+                              >
+                                <Link to={detailHref(emp.staffId, searchQuery, filterDesignation)}>
+                                  View Details
+                                </Link>
+                              </Button>
+                              {isEmployeeActive(emp) ? (
+                                <Button
+                                  size="sm"
+                                  variant="brand"
+                                  className="h-7 px-2 text-[11px]"
+                                  onClick={() => openScoringModal(emp)}
+                                >
+                                  Score Employee
+                                </Button>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               }
             />
           )}
@@ -580,29 +634,35 @@ export function StaffPerformanceTab({
                 </DataCard>
               ))}
               desktop={
-                <Table>
-                  <TableHeader>
-                    <TableRow className="text-xs text-slate-500 uppercase">
-                      <TableHead>Criterion</TableHead>
-                      <TableHead>Max Points</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {scalesPaging.slice.map((s) => (
-                      <TableRow key={s.id || s._localKey}>
-                        <TableCell className="font-semibold text-slate-900">{s.name}</TableCell>
-                        <TableCell className="font-mono text-slate-700">{s.maxPoints} pts</TableCell>
-                        <TableCell>
-                          <RowActionButtons
-                            onEdit={() => openEditScale(s)}
-                            onDelete={() => setRemoveTarget(s)}
-                          />
-                        </TableCell>
+                <div className="w-full overflow-x-auto">
+                  <Table className="w-full text-xs">
+                    <TableHeader>
+                      <TableRow className="h-9 text-[11px] text-slate-500 uppercase">
+                        <TableHead className="px-2.5 py-1.5">Criterion</TableHead>
+                        <TableHead className="px-2.5 py-1.5 whitespace-nowrap">Max Points</TableHead>
+                        <TableHead className="px-2.5 py-1.5 whitespace-nowrap">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {scalesPaging.slice.map((s) => (
+                        <TableRow key={s.id || s._localKey} className="h-10">
+                          <TableCell className="px-2.5 py-2 text-xs font-semibold text-slate-900">
+                            {s.name}
+                          </TableCell>
+                          <TableCell className="px-2.5 py-2 font-mono text-xs whitespace-nowrap text-slate-700">
+                            {s.maxPoints} pts
+                          </TableCell>
+                          <TableCell className="px-2.5 py-2 whitespace-nowrap">
+                            <RowActionButtons
+                              onEdit={() => openEditScale(s)}
+                              onDelete={() => setRemoveTarget(s)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               }
             />
           )}

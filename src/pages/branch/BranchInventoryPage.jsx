@@ -157,10 +157,7 @@ export function BranchInventoryPage() {
           actions={
             activeTab === 'stock' ? (
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="brand" onClick={openDemandRequests}>
-                  <ClipboardList className="size-4" />
-                  Stock Request
-                </Button>
+
                 <Button type="button" variant="outline" onClick={() => setPriceRuleOpen(true)}>
                   <Settings2 className="size-4" />
                   Stock Control Price
