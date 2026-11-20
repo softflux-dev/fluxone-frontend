@@ -16,6 +16,37 @@ import { FieldError } from '@/components/shared/FieldError'
 import { fieldErrorClass } from '@/lib/validation/fieldErrors'
 import { useFieldErrors } from '@/hooks/shared/useFieldErrors'
 import { useFormBaseline } from '@/hooks/shared/useFormBaseline'
+import { Eye, EyeOff } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+function PasswordInput({ id, value, onChange, placeholder, autoComplete, invalid, className }) {
+  const [show, setShow] = useState(false)
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        aria-invalid={invalid}
+        allowSpecial
+        className={cn('pr-10', className)}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        aria-label={show ? 'Hide password' : 'Show password'}
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-slate-500 hover:text-slate-700"
+      >
+        {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+      </button>
+    </div>
+  )
+}
+
 
 const PROFILE_FIELD_IDS = {
   name: 'profile-name',
@@ -84,9 +115,11 @@ export function ProfileEditDialog({
     const nextConfirm = confirmPassword
 
     if (!nextName) errors.name = 'Name is required'
-    if (!nextId || nextId.length < 3) {
-      errors.loginId = 'User ID or Email must be at least 3 characters'
-    }
+if (!nextId) {
+  errors.loginId = 'Email is required'
+} else if (!EMAIL_REGEX.test(nextId)) {
+  errors.loginId = 'Enter a valid email address'
+}
 
     const changingPassword = Boolean(nextPassword || nextConfirm || nextCurrent)
     if (changingPassword) {
@@ -186,16 +219,17 @@ export function ProfileEditDialog({
             <FieldError message={fieldErrors.name} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="profile-login-id">User ID or Email</Label>
+            <Label htmlFor="profile-login-id">Email</Label>
             <Input
               id="profile-login-id"
+              type="email"
               value={loginId}
               onChange={(e) => {
                 setLoginId(e.target.value)
                 clearField('loginId')
               }}
-              placeholder="Login ID or email"
-              autoComplete="username"
+              placeholder="name@example.com"
+              autoComplete="email"
               aria-invalid={Boolean(fieldErrors.loginId)}
               className={fieldErrorClass(fieldErrors.loginId)}
             />
@@ -205,9 +239,8 @@ export function ProfileEditDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="profile-current-password">Current Password</Label>
-            <Input
+              <PasswordInput
               id="profile-current-password"
-              type="password"
               value={currentPassword}
               onChange={(e) => {
                 setCurrentPassword(e.target.value)
@@ -215,16 +248,15 @@ export function ProfileEditDialog({
               }}
               placeholder="Required only when setting a new password"
               autoComplete="current-password"
-              aria-invalid={Boolean(fieldErrors.currentPassword)}
+              invalid={Boolean(fieldErrors.currentPassword)}
               className={fieldErrorClass(fieldErrors.currentPassword)}
             />
             <FieldError message={fieldErrors.currentPassword} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="profile-password">New Password</Label>
-            <Input
+            <PasswordInput
               id="profile-password"
-              type="password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)
@@ -233,16 +265,15 @@ export function ProfileEditDialog({
               }}
               placeholder="Leave blank to keep current"
               autoComplete="new-password"
-              aria-invalid={Boolean(fieldErrors.password)}
+              invalid={Boolean(fieldErrors.password)}
               className={fieldErrorClass(fieldErrors.password)}
             />
             <FieldError message={fieldErrors.password} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="profile-confirm-password">Confirm New Password</Label>
-            <Input
+          <PasswordInput
               id="profile-confirm-password"
-              type="password"
               value={confirmPassword}
               onChange={(e) => {
                 setConfirmPassword(e.target.value)
@@ -250,7 +281,7 @@ export function ProfileEditDialog({
               }}
               placeholder="Repeat new password"
               autoComplete="new-password"
-              aria-invalid={Boolean(fieldErrors.confirmPassword)}
+              invalid={Boolean(fieldErrors.confirmPassword)}
               className={fieldErrorClass(fieldErrors.confirmPassword)}
             />
             <p className="text-xs text-slate-500">

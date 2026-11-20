@@ -64,7 +64,7 @@ export function ProfileCard({
 
       <div className="mt-5 space-y-2.5 sm:mt-8">
         <DetailRow label="Name" value={displayName} />
-        <DetailRow label="User ID" value={loginId} />
+        <DetailRow label="Email" value={loginId} />
         <DetailRow label="Role" value={roleLabel} />
         <DetailRow label="Login expires" value={loginExpires} />
       </div>
