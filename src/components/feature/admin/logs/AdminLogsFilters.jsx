@@ -29,6 +29,7 @@ function hasActiveFilters(filters = {}) {
       filters.entityId ||
       filters.productType ||
       filters.variantTypeId ||
+      filters.variantValueId ||
       filters.supplierId ||
       filters.orderStatus ||
       filters.settingCategory ||
@@ -132,6 +133,7 @@ export function AdminLogsFilters({ filters, onChange, onClear }) {
                   entityId: '',
                   productType: '',
                   variantTypeId: '',
+                  variantValueId: '',
                   supplierId: '',
                 })
               }

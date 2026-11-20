@@ -100,6 +100,7 @@ export const ADMIN_LOG_TAB_FILTER_KEYS = Object.freeze([
   'entityId',
   'productType',
   'variantTypeId',
+  'variantValueId',
   'supplierId',
   'orderStatus',
   'settingCategory',
