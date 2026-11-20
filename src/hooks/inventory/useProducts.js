@@ -96,8 +96,8 @@ export function useProducts(initialFilters = EMPTY_FILTERS, options = {}) {
   }, [catalog.childrenByParent, filters.categoryId, catalogIncludeInactive])
 
   const loadCatalog = useCallback(
-    ({ force = false } = {}) =>
-      dispatch(loadProductCatalog({ force, categoryActive })).unwrap(),
+    ({ force = false, categoryId } = {}) =>
+      dispatch(loadProductCatalog({ force, categoryActive, categoryId })).unwrap(),
     [dispatch, categoryActive],
   )
 

@@ -64,7 +64,10 @@ function emptyForm() {
 
 export function AddItemPage() {
   const navigate = useNavigate()
-  const { catalog, catalogLoading, createProduct } = useProducts({}, { skipList: true })
+  const { catalog, catalogLoading, createProduct, loadCatalog } = useProducts(
+    {},
+    { skipList: true },
+  )
 
   const [tab, setTab] = useState('basic')
   const [form, setForm] = useState(emptyForm)
@@ -74,6 +77,13 @@ export function AddItemPage() {
   useEffect(() => {
     if (error) focusFieldById('add-item-form-error')
   }, [error])
+
+  // Re-fetch offers when the category changes so the discount dropdown only
+  // shows offers scoped to the selected category (plus "All Categories").
+  useEffect(() => {
+    void loadCatalog({ categoryId: form.categoryId || undefined })
+  }, [form.categoryId, loadCatalog])
+
   const [saving, setSaving] = useState(false)
 
   const onVariantCatalogError = useCallback(
