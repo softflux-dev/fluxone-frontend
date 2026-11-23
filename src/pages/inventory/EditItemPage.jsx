@@ -516,11 +516,12 @@ export function EditItemPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="edit-name">Product name</Label>
-                <Input
-                  id="edit-name"
-                  value={form.name}
-                  onChange={(e) => patch('name', e.target.value)}
-                />
+               <Input
+                id="edit-name"
+                allowNumbers
+                value={form.name}
+                onChange={(e) => patch('name', e.target.value)}
+              />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="edit-desc">Description (optional)</Label>

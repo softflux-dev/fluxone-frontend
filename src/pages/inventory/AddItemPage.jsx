@@ -417,6 +417,7 @@ export function AddItemPage() {
                 <Label htmlFor="add-name">Product name</Label>
                 <Input
                   id="add-name"
+                  allowNumbers
                   value={form.name}
                   onChange={(e) => patch('name', e.target.value)}
                   placeholder="e.g. Juice Bottle"

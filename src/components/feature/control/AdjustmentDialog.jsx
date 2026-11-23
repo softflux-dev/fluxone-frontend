@@ -214,7 +214,10 @@ export function AdjustmentDialog({
     const errors = {}
     if (!resolvedProductId) errors.productId = 'Select a product (and variant if needed)'
     const qty = Number(quantity)
-    if (!Number.isFinite(qty) || qty <= 0) errors.quantity = 'Enter a positive quantity'
+if (!Number.isFinite(qty) || qty === 0) errors.quantity = 'Enter a non-zero quantity'
+if (operation === OPERATIONS.OUT && qty < 0) {
+  errors.quantity = 'Stock out quantity must be positive'
+}
     if (!notes.trim() || notes.trim().length < 3) {
       errors.notes = 'Notes are required (min 3 characters)'
     }
@@ -247,6 +250,21 @@ export function AdjustmentDialog({
       reason: reasonText,
     }
     try {
+            // Negative quantity = signed adjustment (stock decreases)
+      if (operation === OPERATIONS.IN && qty < 0) {
+        const result = await onSubmit?.({
+          kind: 'movement',
+          movementType: MOVEMENT_TYPES.ADJUSTMENT,
+          body: {
+            productId: resolvedProductId,
+            quantity: qty,
+            reason: reasonText,
+          },
+        })
+        if (result?.success) onOpenChange?.(false)
+        else setFormError(result?.error || 'Save failed')
+        return
+      }
       if (operation === OPERATIONS.IN) {
         // Stock-in path handled by parent via stock-in API.
         // Stock In API + controlSource so row also appears on Adjustment tab
@@ -434,16 +452,17 @@ export function AdjustmentDialog({
           ) : null}
           <div className="space-y-1.5">
             <Label>Quantity</Label>
-            <WholeNumberInput
-              min={1}
-              value={quantity}
-              onChange={(e) => {
-                setQuantity(e.target.value)
-                clearField('quantity')
-              }}
-              aria-invalid={Boolean(fieldErrors.quantity)}
-              className={fieldErrorClass(fieldErrors.quantity)}
-            />
+           <WholeNumberInput
+            allowNegative={operation === OPERATIONS.IN}
+            min={operation === OPERATIONS.IN ? -1000000 : 1}
+            value={quantity}
+            onChange={(e) => {
+              setQuantity(e.target.value)
+              clearField('quantity')
+            }}
+            aria-invalid={Boolean(fieldErrors.quantity)}
+            className={fieldErrorClass(fieldErrors.quantity)}
+          />
             <FieldError message={fieldErrors.quantity} />
           </div>
 
