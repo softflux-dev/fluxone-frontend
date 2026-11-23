@@ -27,8 +27,6 @@ import { useAuth } from '@/context/AuthContext'
 import { useClientPagination } from '@/hooks/shared/useClientPagination'
 import {
   isScaleDraftDirty,
-  isScaleSumValid,
-  SCALE_SUM_TARGET,
   sumScalePoints,
 } from '@/lib/branch/performanceScales'
 import {
@@ -158,21 +156,19 @@ export function StaffPerformanceTab({
   const rosterPaging = useClientPagination(filteredRoster)
   const scalesPaging = useClientPagination(criteriaDraft)
   const pointsUsed = sumScalePoints(criteriaDraft)
-  const sumValid = isScaleSumValid(criteriaDraft)
-  // Save only when total is 100 and draft differs from last published scale
+  // Save only when total is greater than 0 and draft differs from last published scale
   const isDirty = isScaleDraftDirty(criteriaDraft, activeCriteria)
-  const canSaveScale = sumValid && isDirty
-  const scaleFull = pointsUsed >= SCALE_SUM_TARGET
+  const canSaveScale = pointsUsed > 0 && isDirty
 
-  // Parent header: Add Criterion disabled when total already 100
+  // Parent header: Add Criterion is never disabled by total (any total is valid)
   useEffect(() => {
     onScaleStateChange?.({
       pointsUsed,
-      scaleFull,
+      scaleFull: false,
       isDirty,
       canSaveScale,
     })
-  }, [pointsUsed, scaleFull, isDirty, canSaveScale, onScaleStateChange])
+  }, [pointsUsed, isDirty, canSaveScale, onScaleStateChange])
 
   const openScoringModal = (employee) => setScoringEmployee(employee)
 
@@ -206,7 +202,7 @@ export function StaffPerformanceTab({
     })
   }
 
-  // Remove from draft only — must Save Scale (sum === 100) to persist a new version
+  // Remove from draft only — click Save Scale to persist a new version
   const confirmRemoveCriterion = () => {
     if (!removeTarget) return
     const key = removeTarget.id || removeTarget._localKey
@@ -215,17 +211,17 @@ export function StaffPerformanceTab({
     )
     setRemoveTarget(null)
     toastInfo(
-      `“${removeTarget.name}” removed from draft. Adjust remaining max points to ${SCALE_SUM_TARGET}, then click Save Scale to publish.`,
+      `“${removeTarget.name}” removed from draft. Click Save Scale to publish the updated version.`,
     )
   }
 
   const handleSaveScaleVersion = async () => {
-    if (!sumValid) {
+    if (pointsUsed <= 0) {
       document.getElementById('scoring-scale-total')?.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
       })
-      return toastError(`Criteria maximums must total exactly ${SCALE_SUM_TARGET}`)
+      return toastError('Criteria maximums must total more than 0')
     }
     if (!isDirty) {
       return toastInfo('No changes to save — scoring scale already matches the published version.')
@@ -488,7 +484,7 @@ export function StaffPerformanceTab({
                             {renderStatusBadge(emp)}
                           </TableCell>
                           <TableCell className="px-2.5 py-2 text-xs font-semibold whitespace-nowrap text-slate-800">
-                            {emp.score == null ? '—' : `${Number(emp.score).toFixed(0)} / 100`}
+                            {emp.score == null ? '—' : `${Number(emp.score).toFixed(0)} / ${pointsUsed}`}
                           </TableCell>
                           <TableCell className="px-2.5 py-2 whitespace-nowrap">
                             {renderTrend(emp)}
@@ -556,8 +552,8 @@ export function StaffPerformanceTab({
           title="Configured Scoring Criteria"
           description={
             scaleMeta
-              ? `Active version v${scaleMeta.versionNumber} · Total ${pointsUsed} / ${SCALE_SUM_TARGET}`
-              : `Draft total ${pointsUsed} / ${SCALE_SUM_TARGET}`
+              ? `Active version v${scaleMeta.versionNumber} · Total ${pointsUsed} pts`
+              : `Draft total ${pointsUsed} pts`
           }
           actions={
             <Button
@@ -566,8 +562,8 @@ export function StaffPerformanceTab({
               loading={savingScale}
               disabled={!canSaveScale}
               title={
-                !sumValid
-                  ? `Total must equal ${SCALE_SUM_TARGET}`
+                pointsUsed <= 0
+                  ? 'Add at least one criterion before saving'
                   : !isDirty
                     ? 'No unpublished changes'
                     : 'Save Scale'
@@ -581,32 +577,30 @@ export function StaffPerformanceTab({
           <div
             id="scoring-scale-total"
             className={`mb-4 rounded-lg border px-3 py-2 text-xs ${
-              sumValid
+              pointsUsed > 0
                 ? isDirty
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                   : 'border-slate-200 bg-slate-50 text-slate-600'
                 : 'border-amber-200 bg-amber-50 text-amber-800'
             }`}
           >
-            {!sumValid ? (
+            {pointsUsed <= 0 ? (
               <>
-                Running total: <strong>{pointsUsed}</strong> / {SCALE_SUM_TARGET}. Edit remaining
-                criteria so the total equals exactly {SCALE_SUM_TARGET}, then click{' '}
+                Running total: <strong>{pointsUsed}</strong> pts. Add criteria, then click{' '}
                 <strong>Save Scale</strong>. Until you save, removed criteria can reappear after
                 refresh.
               </>
             ) : isDirty ? (
               <>
-                Running total: <strong>{pointsUsed}</strong> / {SCALE_SUM_TARGET}. Click{' '}
+                Running total: <strong>{pointsUsed}</strong> pts. Click{' '}
                 <strong>Save Scale</strong> to publish a new version. Past evaluations keep their
                 snapshots. Deletions only persist after a successful save — refresh before saving
                 will restore the last published scale.
               </>
             ) : (
               <>
-                Running total: <strong>{pointsUsed}</strong> / {SCALE_SUM_TARGET}. Scale is up to
-                date — edit or remove a criterion to enable <strong>Save Scale</strong>. Add
-                Criterion stays visible but disabled while the total is full.
+                Running total: <strong>{pointsUsed}</strong> pts. Scale is up to date — edit or
+                remove a criterion to enable <strong>Save Scale</strong>.
               </>
             )}
           </div>
@@ -615,7 +609,7 @@ export function StaffPerformanceTab({
             <TableRowsSkeleton rows={4} />
           ) : criteriaDraft.length === 0 ? (
             <p className="py-8 text-center text-sm text-slate-400">
-              No criteria yet. Add criteria until the total is {SCALE_SUM_TARGET}.
+              No criteria yet. Add criteria to begin scoring.
             </p>
           ) : (
             <ResponsiveDataShell

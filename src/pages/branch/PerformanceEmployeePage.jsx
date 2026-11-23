@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { MotionHeader, MotionReveal } from '@/components/shared/MotionReveal'
+import { SurfaceCard } from '@/components/shared/SurfaceCard'
 import { PerformanceDetailHeader } from '@/components/feature/branch/performance/PerformanceDetailHeader'
 import { PerformanceDetailSkeleton } from '@/components/feature/branch/performance/PerformanceDetailSkeleton'
 import { PerformanceSummaryCards } from '@/components/feature/branch/performance/PerformanceSummaryCards'
@@ -14,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PATHS } from '@/router/paths'
 import { useBranchPerformanceDetail } from '@/hooks/branch/useBranchPerformanceDetail'
+import { sumScalePoints } from '@/lib/branch/performanceScales'
 
 const SLOW_LOAD_MS = 8000
 
@@ -202,6 +204,41 @@ export function PerformanceEmployeePage() {
         <>
           <MotionReveal delay={0.04}>
             <PerformanceSummaryCards summary={detail.summary} />
+          </MotionReveal>
+
+          <MotionReveal delay={0.05}>
+            <SurfaceCard
+              title="Active Scoring Scale"
+              description={
+                criteria.length
+                  ? `${criteria.length} criterion${criteria.length !== 1 ? 's' : ''} · ${sumScalePoints(criteria)} pts total`
+                  : 'No scale configured yet — save a scale to enable scoring'
+              }
+            >
+              {criteria.length ? (
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-[320px] border-b border-border last:border-b-0">
+                    {criteria.map((c, i) => (
+                      <div
+                        key={c.id}
+                        className={`flex items-center justify-between px-4 py-3 text-sm border-b border-border last:border-b-0 ${i % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}`}
+                      >
+                        <span className="font-semibold text-slate-900">{c.name}</span>
+                        <span className="font-mono text-slate-700">{c.maxPoints} pts</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-500 border-t border-border bg-slate-50/50">
+                      <span>Scale total</span>
+                      <span>{sumScalePoints(criteria)} pts</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="px-4 py-3 text-xs text-slate-500">
+                  Configure and save a scoring scale so evaluations can be scored against it.
+                </p>
+              )}
+            </SurfaceCard>
           </MotionReveal>
 
           <MotionReveal delay={0.06}>

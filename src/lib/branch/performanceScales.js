@@ -1,4 +1,5 @@
-// Versioned scoring scale — criteria maxes must total exactly 100 (TL).
+// Versioned scoring scale — any positive total of criterion maxes is accepted
+// (final score is normalized to a percentage out of 100).
 
 export const SCALE_MAX_POINTS_MSG =
   'Maximum points must be a whole number greater than 0.'
@@ -46,7 +47,7 @@ export function formatScorePercent(value) {
 }
 
 export function isScaleSumValid(criteria = []) {
-  return sumScalePoints(criteria) === SCALE_SUM_TARGET
+  return sumScalePoints(criteria) > 0
 }
 
 // Stable compare for draft vs published criteria (order-independent)
