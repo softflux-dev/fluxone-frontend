@@ -25,9 +25,17 @@ export function OrderDetailPanel({
   error = '',
   onRetry,
   onPrint,
+  actionsBusy = false,
+  onEdit,
+  onApprove,
+  onReject
 }) {
   const resolved = order || null
   const titleRef = resolved?.orderNumber || orderId || 'Order'
+
+  const showDecisionActions =
+   String(resolved?.status || '').toLowerCase() === 'pending' && Boolean(onEdit || onApprove || onReject)
+ 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,8 +70,48 @@ export function OrderDetailPanel({
                   Download PDF
                 </Button>
               ) : null}
-            </DialogFooter>
-          }
+
+            {showDecisionActions ? (
+      <>
+        {onEdit ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full cursor-pointer sm:w-auto"
+            disabled={loading || actionsBusy}
+            onClick={() => onEdit(resolved)}
+          >
+            Edit
+          </Button>
+        ) : null}
+        {onReject ? (
+          <Button
+            type="button"
+            variant="destructive"
+            className="w-full cursor-pointer sm:w-auto"
+            disabled={loading || actionsBusy}
+            onClick={() => onReject(resolved)}
+          >
+            Reject
+          </Button>
+        ) : null}
+        {onApprove ? (
+          <Button
+            type="button"
+            variant="brand"
+            className="w-full cursor-pointer sm:w-auto"
+            loading={actionsBusy}
+            disabled={loading}
+            onClick={() => onApprove(resolved)}
+          >
+            Approve
+          </Button>
+        ) : null}
+      </>
+    ) : null}
+    {/* ===== END ===== */}
+  </DialogFooter>
+}
         />
       </DialogContent>
     </Dialog>

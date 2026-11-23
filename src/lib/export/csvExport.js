@@ -32,11 +32,11 @@ export function downloadCsv(filename, csvContent) {
   URL.revokeObjectURL(url)
 }
 
-export async function exportRowsToCsv({ filename, headers, rows }) {
+export async function exportRowsToCsv({ filename, headers, rows , exactFileName = false }) {
   if (!rows?.length) {
     throw new Error('No rows to export')
   }
-  await exportRowsToStyledExcel({ filename, headers, rows })
+  await exportRowsToStyledExcel({ filename, headers, rows , exactFileName })
 }
 
 // '#8E238F' -> 'FF8E238F' (ExcelJS ARGB format)
@@ -67,6 +67,13 @@ function normalizeExportFileName(rawName) {
   return buildExportFileName(slug)
 }
 
+function exactExportFileName(rawName) {
+  const clean = String(rawName || 'export')
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-')
+    .trim()
+  return /\.xlsx$/i.test(clean) ? clean : `${clean.replace(/\.(xls|csv)$/i, '')}.xlsx`
+}
+
 // Real .xlsx: purple bold header (row 1), frozen, auto-width, Times New Roman
 export async function exportRowsToStyledExcel({
   filename,
@@ -75,6 +82,7 @@ export async function exportRowsToStyledExcel({
   sheetName = 'Export',
   freezeHeader = true,
   enableFilter = true,
+  exactFileName = false, 
 }) {
   if (!rows?.length) {
     throw new Error('No rows to export')
@@ -134,7 +142,9 @@ export async function exportRowsToStyledExcel({
 const url = URL.createObjectURL(blob)
 const anchor = document.createElement('a')
 anchor.href = url
-anchor.download = normalizeExportFileName(filename)
+anchor.download = exactFileName
+  ? exactExportFileName(filename)
+  : normalizeExportFileName(filename)
 anchor.click()
 URL.revokeObjectURL(url)
 }

@@ -6,8 +6,8 @@ export const PHONE_REGEX = /^(?:\+92|0)?3[0-9]{9}$/
 export const GENERAL_PHONE_REGEX = /^\+?[0-9]{10,13}$/
 
 // Standard RFC-compliant Email Regex
-export const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-
+export const EMAIL_REGEX =
+  /^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/
 // URL Regex (http / https)
 export const URL_REGEX = /^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/i
 

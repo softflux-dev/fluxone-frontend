@@ -4,7 +4,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { BRAND } from '@/lib/constants'
+import { API_BASE_URL, BRAND } from '@/lib/constants'
 import { BrandLogo } from '@/components/shared/BrandLogo'
 
 const LOGIN_PATH = '/login'
@@ -25,7 +25,7 @@ const TITLES = {
 // Sends a POST request to /api/auth/<path> and returns the response data.
 // Throws an Error with the server's message if the request fails.
 async function callAuth(path, body) {
-  const res = await fetch(`/api/auth/${path}`, {
+  const res = await fetch(`${API_BASE_URL}/auth/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

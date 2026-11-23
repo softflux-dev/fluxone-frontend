@@ -6,11 +6,12 @@ const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100
 
 export function getPricingBreakdown(item) {
   const purchase = num(item?.purchasePrice)
+  const originalSelling = num(item?.sellingPrice)
   const profitPct = num(item?.profitPercent)
   const discountPct = num(item?.discountPercent)
   const taxPct = num(item?.taxPercent)
 
-  const selling = purchase * (1 + profitPct / 100)
+  const selling = originalSelling * (1 + profitPct / 100)
   const discounted = selling * (1 - discountPct / 100)
   const taxAmount = discounted * (taxPct / 100)
   const final = discounted + taxAmount

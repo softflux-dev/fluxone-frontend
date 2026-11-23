@@ -26,11 +26,13 @@ function roleLabel(role) {
   return roleDisplayName(role) || role
 }
 
-function exportDateStamp(date = new Date()) {
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+function formatFileDate(value) {
+  const str = String(value || '').slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return null
+  const [y, m, d] = str.split('-').map(Number)
+  return `${String(d).padStart(2, '0')} ${MONTHS[m - 1]} ${y}`   // 15 Nov 2026
 }
-
 function buildFilterSummary(filters = {}, branchesById = {}) {
   const parts = []
   const today = localDateInputValue()
@@ -83,7 +85,13 @@ export async function exportAdminLogsSelection({
   if (!rows.length) throw new Error('No rows to export')
 
   const tabSlug = adminLogTabFileSlug(filters.tab)
-  const filename = `admin-logs-${exportDateStamp()}.xlsx`
+  const tabLabel =
+    filters.tab === 'all'
+      ? 'All Activity'
+      : ADMIN_LOG_CATEGORY_LABELS[filters.tab] || 'Logs'
+  const fromDate = formatFileDate(filters.from)
+  const toDate = formatFileDate(filters.to)
+  const filename = `Logs_${tabLabel}_${fromDate || toDate || 'NoDate'}_${toDate || fromDate || 'NoDate'}.xlsx`
 
   await exportRowsToStyledExcel({
     filename,
@@ -92,6 +100,7 @@ export async function exportAdminLogsSelection({
     rows: rows.map(mapLogExportRow),
     freezeHeader: true,
     enableFilter: true,
+    exactFileName: true,
   })
 
   return { filename, exported: rows.length }

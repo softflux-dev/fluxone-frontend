@@ -1,13 +1,14 @@
 import { cn } from '@/lib/utils'
 
-function Input({ className, type, name, id, onChange, onKeyDown, ...props }) {
+function Input({ className, type, name, id, onChange, onKeyDown, allowNumbers, allowNegative, ...props }) {
   // Is it a normal text box or a number box?
   const isText = !type || type === 'text'
   const isNumber = type === 'number'
 
  // Name field = name/id has "name" (but not "username")
   const label = `${name || ''} ${id || ''}`.toLowerCase()
-  const isNameField = isText && label.includes('name') && !label.includes('user')
+  const isNameField =
+  isText && !allowNumbers && label.includes('name') && !label.includes('user')
 
   function handleChange(event) {
     const value = event.target.value
@@ -17,7 +18,7 @@ function Input({ className, type, name, id, onChange, onKeyDown, ...props }) {
       event.target.value = value.replace(/[^\p{L}\s]/gu, '')
     } else if (isText) {
       // Other text fields: remove leading = + - @
-      event.target.value = value.replace(/^[=+\-@]+/, '')
+      event.target.value = value.replace(allowNegative ? /^[=+@]+/ : /^[=+\-@]+/, '')
     }
 
     onChange?.(event)
@@ -25,7 +26,7 @@ function Input({ className, type, name, id, onChange, onKeyDown, ...props }) {
 
   function handleKeyDown(event) {
     // Number field: block e, E, + and -
-    if (isNumber && ['e', 'E', '+', '-'].includes(event.key)) {
+    if (isNumber && (allowNegative ? ['e', 'E', '+'] : ['e', 'E', '+', '-']).includes(event.key)) {
       event.preventDefault()
     }
     onKeyDown?.(event)

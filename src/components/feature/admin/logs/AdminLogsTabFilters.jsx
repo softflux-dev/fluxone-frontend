@@ -19,7 +19,7 @@ import {
   ADMIN_LOG_VARIANT_ACTIONS,
 } from '@/lib/admin/adminLogsFilterConfig'
 
-function useFilterOptions(kind, branchId, productType) {
+function useFilterOptions(kind, branchId, productType, productId = '', variantTypeId = '') {
   const [options, setOptions] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -33,6 +33,8 @@ function useFilterOptions(kind, branchId, productType) {
       setLoading(true)
       const params = { branchId, kind }
       if (kind === 'products' && productType) params.productType = productType
+      if (productId) params.productId = productId
+      if (variantTypeId) params.variantTypeId = variantTypeId
       const res = await apiClient.get(endpoints.admin.logs.filterOptions, params)
       if (cancelled) return
       setLoading(false)
@@ -46,7 +48,7 @@ function useFilterOptions(kind, branchId, productType) {
     return () => {
       cancelled = true
     }
-  }, [branchId, kind, productType])
+  }, [branchId, kind, productType, productId, variantTypeId])
 
   return { options, loading }
 }
@@ -86,9 +88,21 @@ export function AdminLogsTabFilters({ tab, filters, onChange }) {
     tab === 'orders_suppliers' ? 'suppliers' : null,
     branchId,
   )
+  // Stock tab: Variant Type / Value appear once a variant product is picked
+  const showStockVariantFilters =
+    tab === 'stock' && productType === 'variant' && Boolean(filters.entityId)
   const { options: variantTypes, loading: variantTypesLoading } = useFilterOptions(
-    tab === 'variants' ? 'variant_types' : null,
+    tab === 'variants' || showStockVariantFilters ? 'variant_types' : null,
     branchId,
+    '',
+    showStockVariantFilters ? filters.entityId : '',
+  )
+  const { options: variantValues, loading: variantValuesLoading } = useFilterOptions(
+    showStockVariantFilters ? 'variant_values' : null,
+    branchId,
+    '',
+    filters.entityId,
+    filters.variantTypeId || '',
   )
 
   const needsBranchForProduct = ['stock', 'pricing', 'products', 'bundles', 'orders_suppliers'].includes(
@@ -117,7 +131,9 @@ export function AdminLogsTabFilters({ tab, filters, onChange }) {
             label="Product Type"
             value={filters.productType}
             options={ADMIN_LOG_PRODUCT_TYPE_OPTIONS.filter((o) => o.value)}
-            onChange={(value) => onChange({ productType: value, entityId: '' })}
+            onChange={(value) =>
+              onChange({ productType: value, entityId: '', variantTypeId: '', variantValueId: '' })
+            }
           />
           <div className="space-y-1.5">
             <Label htmlFor="admin-logs-stock-product">Product</Label>
@@ -125,7 +141,9 @@ export function AdminLogsTabFilters({ tab, filters, onChange }) {
               id="admin-logs-stock-product"
               value={filters.entityId || ''}
               disabled={productDisabled || productsLoading}
-              onChange={(e) => onChange({ entityId: e.target.value })}
+              onChange={(e) =>
+                onChange({ entityId: e.target.value, variantTypeId: '', variantValueId: '' })
+              }
             >
               <option value="">
                 {productDisabled ? 'Select branch first' : 'All products'}
@@ -137,6 +155,42 @@ export function AdminLogsTabFilters({ tab, filters, onChange }) {
               ))}
             </NativeSelect>
           </div>
+          {showStockVariantFilters ? (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="admin-logs-stock-variant-type">Variant Type</Label>
+                <NativeSelect
+                  id="admin-logs-stock-variant-type"
+                  value={filters.variantTypeId || ''}
+                  disabled={variantTypesLoading}
+                  onChange={(e) => onChange({ variantTypeId: e.target.value, variantValueId: '' })}
+                >
+                  <option value="">All variant types</option>
+                  {variantTypes.map((vt) => (
+                    <option key={vt.id} value={vt.id}>
+                      {vt.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="admin-logs-stock-variant-value">Variant Value</Label>
+                <NativeSelect
+                  id="admin-logs-stock-variant-value"
+                  value={filters.variantValueId || ''}
+                  disabled={variantValuesLoading}
+                  onChange={(e) => onChange({ variantValueId: e.target.value })}
+                >
+                  <option value="">All variant values</option>
+                  {variantValues.map((vv) => (
+                    <option key={vv.id} value={vv.id}>
+                      {vv.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+            </>
+          ) : null}
         </>
       ) : null}
 

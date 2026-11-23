@@ -28,6 +28,7 @@ const EMPTY_FILTERS = {
   entityId: '',
   productType: '',
   variantTypeId: '',
+  variantValueId: '',
   supplierId: '',
   orderStatus: '',
   settingCategory: '',
@@ -64,6 +65,7 @@ function toApiParams(filters, extra = {}) {
   if (filters.entityId) params.entityId = filters.entityId
   if (filters.productType) params.productType = filters.productType
   if (filters.variantTypeId) params.variantTypeId = filters.variantTypeId
+  if (filters.variantValueId) params.variantValueId = filters.variantValueId
   if (filters.supplierId) params.supplierId = filters.supplierId
   if (filters.orderStatus) params.orderStatus = filters.orderStatus
   if (filters.settingCategory) params.settingCategory = filters.settingCategory
@@ -149,6 +151,7 @@ export function useAdminLogs(initialFilters = {}) {
         'entityId',
         'productType',
         'variantTypeId',
+        'variantValueId',
         'supplierId',
         'orderStatus',
         'settingCategory',
