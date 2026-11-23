@@ -182,16 +182,6 @@ export function PerformanceTrendChart({ chart, onPointClick }) {
         </div>
       )}
 
-      {markers.length ? (
-        <ul className="mt-2 space-y-1 text-[11px] text-slate-500">
-          {markers.map((m) => (
-            <li key={m.versionId} title={m.changeSummary}>
-              <span className="font-medium text-slate-700">{m.label}</span>
-              {m.changeSummary ? ` — ${m.changeSummary}` : ''}
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </div>
   )
 }
