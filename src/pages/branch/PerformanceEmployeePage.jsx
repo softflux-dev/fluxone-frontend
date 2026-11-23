@@ -48,6 +48,7 @@ export function PerformanceEmployeePage() {
   const startDateRef = useRef(startDate)
   const endDateRef = useRef(endDate)
   const [timelinePage, setTimelinePage] = useState(1)
+  const [timelineLimit, setTimelineLimit] = useState(10)
   const [expandedId, setExpandedId] = useState(null)
   const [highlightId, setHighlightId] = useState(null)
   const [scoreOpen, setScoreOpen] = useState(false)
@@ -71,13 +72,18 @@ export function PerformanceEmployeePage() {
       startDate,
       endDate,
       timelinePage,
-      timelineLimit: 10,
+      timelineLimit,
     })
     setSlow(false)
     if (!res.success) {
       setError(res.error || 'Failed to load performance detail')
     }
-  }, [staffId, timelinePage, loadEmployeeDetail])
+  }, [staffId, timelinePage, timelineLimit, loadEmployeeDetail])
+
+  const handleTimelinePageSizeChange = useCallback((nextSize) => {
+    setTimelineLimit(nextSize)
+    setTimelinePage(1)
+  }, [])
 
   const handleApply = useCallback(async () => {
     if (startDate && endDate && endDate < startDate) {
@@ -329,10 +335,12 @@ export function PerformanceEmployeePage() {
               timeline={detail.timeline}
               expandedId={expandedId}
               highlightId={highlightId}
+              pageSize={timelineLimit}
+              onPageChange={setTimelinePage}
+              onPageSizeChange={handleTimelinePageSizeChange}
               onToggleExpand={(id) =>
                 setExpandedId((prev) => (prev === id ? null : id))
               }
-              onPageChange={setTimelinePage}
             />
           </MotionReveal>
         </>
