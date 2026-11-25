@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label'
 import { WholeNumberInput } from '@/components/shared/WholeNumberInput'
 import {
   parseScaleMaxPoints,
-  SCALE_SUM_TARGET,
   sumScalePoints,
 } from '@/lib/branch/performanceScales'
 import { fieldErrorClass } from '@/lib/validation/fieldErrors'
@@ -71,8 +70,7 @@ export function ScaleFormDialog({
 
   const pointsHint = fieldErrors.maxPoints || rangeError
   const projectedTotal = pointsValue == null ? otherUsed : otherUsed + pointsValue
-  const overBudget = projectedTotal > SCALE_SUM_TARGET
-  const canSubmit = Boolean(form.name.trim()) && parsed.ok && !overBudget
+  const canSubmit = Boolean(form.name.trim()) && parsed.ok
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -84,9 +82,6 @@ export function ScaleFormDialog({
 
     const check = parseScaleMaxPoints(form.maxPoints)
     if (!check.ok) errors.maxPoints = check.error
-    else if (otherUsed + check.value > SCALE_SUM_TARGET) {
-      errors.maxPoints = `Total cannot exceed ${SCALE_SUM_TARGET} (remaining ${Math.max(0, SCALE_SUM_TARGET - otherUsed)})`
-    }
 
     if (Object.keys(errors).length) {
       applyErrors(errors, FIELD_IDS, SCALE_FIELD_ORDER)
@@ -109,7 +104,7 @@ export function ScaleFormDialog({
       onOpenChange={onOpenChange}
       dirty={isDirty(form)}
       title={isEdit ? 'Edit Criterion' : 'Add Criterion'}
-      description={`Maximums across all criteria must total exactly ${SCALE_SUM_TARGET}.`}
+      description="Max points per criterion must be a whole number of 1 or more."
       contentClassName="sm:max-w-md"
       footer={
         <>
@@ -127,14 +122,12 @@ export function ScaleFormDialog({
       <form id="scale-form" className="space-y-4 py-1" onSubmit={handleSubmit} noValidate>
         <div
           className={`rounded-lg border px-3 py-2 text-xs ${
-            overBudget || pointsHint
+            pointsHint
               ? 'border-rose-200 bg-rose-50 text-rose-700'
-              : projectedTotal === SCALE_SUM_TARGET
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                : 'border-slate-200 bg-slate-50 text-slate-600'
+              : 'border-slate-200 bg-slate-50 text-slate-600'
           }`}
         >
-          Projected total: <strong>{projectedTotal}</strong> / {SCALE_SUM_TARGET}
+          Projected total: <strong>{projectedTotal}</strong> pts
         </div>
 
         <div className="space-y-1.5">
@@ -158,7 +151,6 @@ export function ScaleFormDialog({
           <WholeNumberInput
             id="scale-points"
             min={1}
-            max={SCALE_SUM_TARGET}
             placeholder="e.g. 25"
             value={form.maxPoints}
             onChange={(e) => {
@@ -166,8 +158,8 @@ export function ScaleFormDialog({
               clearField('maxPoints')
             }}
             onBlur={() => setTouchedPoints(true)}
-            aria-invalid={Boolean(fieldErrors.maxPoints || rangeError || overBudget)}
-            className={fieldErrorClass(fieldErrors.maxPoints || rangeError || overBudget)}
+            aria-invalid={Boolean(fieldErrors.maxPoints || rangeError)}
+            className={fieldErrorClass(fieldErrors.maxPoints || rangeError)}
           />
           <FieldError message={fieldErrors.maxPoints || (touchedPoints ? rangeError : null)} />
         </div>

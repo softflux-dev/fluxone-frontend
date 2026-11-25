@@ -62,7 +62,7 @@ export function ScoreEmployeeDialog({
   const handleSubmit = async () => {
     if (!employee?.staffId) return
     if (!criteria.length) {
-      return toastError('Configure a scoring scale (total 100) before evaluating')
+      return toastError('Configure a scoring scale before evaluating')
     }
     setMutating(true)
     try {
@@ -106,13 +106,13 @@ export function ScoreEmployeeDialog({
         <DialogHeader>
           <DialogTitle>Evaluate Performance: {employee?.fullName}</DialogTitle>
           <DialogDescription>
-            Assign points per criterion (0 to max). Scale total is 100 — final score is a percentage.
+            Assign points per criterion (0 to max). Scale total is {summary.maxTotal} pts — final score is a percentage out of 100.
           </DialogDescription>
         </DialogHeader>
 
         {!criteria.length ? (
           <p className="py-4 text-center text-slate-400">
-            Save a scoring scale that totals exactly 100 points first.
+            Save a scoring scale first.
           </p>
         ) : (
           <div className="space-y-4 py-2">

@@ -71,6 +71,7 @@ export function AdminLogsPage() {
     filters.entityId,
     filters.productType,
     filters.variantTypeId,
+    filters.variantValueId,
     filters.supplierId,
     filters.orderStatus,
     filters.settingCategory,
@@ -99,7 +100,6 @@ useEffect(() => {
     setDebouncedSearch('')
   }
 }, [filters.q])
-
 
   const selectedCount = useMemo(() => {
     if (selectAllMatching) {

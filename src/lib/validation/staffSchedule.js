@@ -149,9 +149,23 @@ export function validateStaffFormFields(fields, { isEdit = false, branchHours = 
   if (!fullName) errors.fullName = 'Name is required'
   else if (fullName.length < 2) errors.fullName = 'Name must be at least 2 characters'
 
-  if (!loginId) errors.email = 'ID (login) is required'
-  else if (loginId.length < 3) errors.email = 'ID (login) must be at least 3 characters'
-  else if (/\s/.test(loginId)) errors.email = 'ID (login) cannot contain spaces'
+ 
+const isCashier = fields.role === 'cashier'
+
+if (!loginId) {
+  errors.email = isCashier
+    ? 'ID (login) is required'
+    : 'Email is required'
+} else if (isCashier) {
+  if (loginId.length < 3) {
+    errors.email = 'ID (login) must be at least 3 characters'
+  } else if (/\s/.test(loginId)) {
+    errors.email = 'ID (login) cannot contain spaces'
+  }
+} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginId)) {
+  errors.email = 'Please enter a valid email address'
+}
+
 
   if (!fields.role) errors.role = 'System role is required'
 

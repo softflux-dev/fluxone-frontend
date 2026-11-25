@@ -19,51 +19,23 @@ import { displayOrderRef } from '@/lib/formatDisplayId'
 import { OrderStatusBadge } from '@/components/feature/orders/OrderStatusBadge'
 import { cn } from '@/lib/utils'
 
-// Child: View · Edit · Approve · Reject (Approve is one-click — no edit required)
-function DemandRequestActions({ row, mutating, onView, onEdit, onApprove, onReject }) {
-  const pending = row.status === 'pending'
+// Child: View only. Edit / Approve / Reject live inside the review dialog.
+function DemandRequestActions({ row, onView }) {
   return (
     <div className="inline-flex items-center gap-0.5">
       <ActionIconButton action="view" label="View" onClick={() => onView?.(row)} />
-      {pending ? (
-        <>
-          <ActionIconButton
-            action="edit"
-            label="Edit"
-            disabled={mutating}
-            onClick={() => onEdit?.(row)}
-          />
-          <ActionIconButton
-            action="approve"
-            label="Approve"
-            disabled={mutating}
-            onClick={() => onApprove?.(row)}
-          />
-          <ActionIconButton
-            action="reject"
-            label="Reject"
-            disabled={mutating}
-            onClick={() => onReject?.(row)}
-          />
-        </>
-      ) : null}
     </div>
   )
 }
-
 // Parent: BM Demand Requests list
 export function DemandRequestsTable({
   items = [],
   loading = false,
-  mutating = false,
   highlightId = '',
   pagination,
   onPageChange,
   onPageSizeChange,
   onView,
-  onEdit,
-  onApprove,
-  onReject,
   className,
 }) {
   const list = Array.isArray(items) ? items : []
@@ -116,14 +88,7 @@ export function DemandRequestsTable({
                   {row.companiesNumber ?? 0} companies · {row.itemsNumber ?? 0} items
                 </p>
                 <div className="mt-3">
-                  <DemandRequestActions
-                    row={row}
-                    mutating={mutating}
-                    onView={onView}
-                    onEdit={onEdit}
-                    onApprove={onApprove}
-                    onReject={onReject}
-                  />
+                 <DemandRequestActions row={row} onView={onView} />
                 </div>
               </article>
             ))}
@@ -170,14 +135,7 @@ export function DemandRequestsTable({
                       <OrderStatusBadge status={row.status} />
                     </TableCell>
                     <TableActionsCell className="px-2 py-3">
-                      <DemandRequestActions
-                        row={row}
-                        mutating={mutating}
-                        onView={onView}
-                        onEdit={onEdit}
-                        onApprove={onApprove}
-                        onReject={onReject}
-                      />
+                      <DemandRequestActions row={row} onView={onView} />
                     </TableActionsCell>
                   </TableRow>
                 ))}

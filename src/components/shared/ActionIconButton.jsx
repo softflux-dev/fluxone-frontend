@@ -1,4 +1,4 @@
-import { Ban, Check, Eye, Pencil, Plus, Trash2, Unlock, X } from 'lucide-react'
+import { Ban, Check, Eye, Pencil, ClipboardCheck ,PackagePlus, Plus, Trash2, Unlock, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +13,9 @@ const ACTION_STYLES = {
   block: 'text-rose-600 hover:bg-rose-50 hover:text-rose-800 dark:text-rose-400 dark:hover:bg-muted dark:hover:text-rose-300 hover:scale-110 active:scale-95',
   unblock: 'text-emerald-700 hover:bg-emerald-50 hover:text-emerald-900 dark:text-emerald-400 dark:hover:bg-muted dark:hover:text-emerald-300 hover:scale-110 active:scale-95',
   addChild: 'text-teal-700 hover:bg-teal-50 hover:text-teal-900 dark:text-teal-400 dark:hover:bg-muted dark:hover:text-teal-300 hover:scale-110 active:scale-95',
+  stockRequest: 'text-amber-600 hover:bg-amber-50 hover:text-amber-800 dark:text-amber-400 dark:hover:bg-muted dark:hover:text-amber-300 hover:scale-110 active:scale-95',
+  score: 'text-violet-600 hover:bg-violet-50 hover:text-violet-800 dark:text-violet-400 dark:hover:bg-muted dark:hover:text-violet-300 hover:scale-110 active:scale-95',
+
 }
 
 const ACTION_ICONS = {
@@ -24,6 +27,8 @@ const ACTION_ICONS = {
   block: Ban,
   unblock: Unlock,
   addChild: Plus,
+  stockRequest: PackagePlus,
+  score: ClipboardCheck,
 }
 
 const ACTION_LABELS = {
@@ -35,6 +40,8 @@ const ACTION_LABELS = {
   block: 'Block',
   unblock: 'Unblock',
   addChild: 'Add',
+  stockRequest: 'Stock Request',
+  score: 'Score Employee',
 }
 
 export function ActionIconButton({

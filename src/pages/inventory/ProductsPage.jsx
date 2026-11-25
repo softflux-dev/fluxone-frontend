@@ -20,10 +20,13 @@ import { createMovement as createMovementThunk } from '@/rtk/features/control/co
 import { useDebouncedSearch } from '@/hooks/shared/useDebouncedSearch'
 import { useProducts } from '@/hooks/inventory/useProducts'
 import { BRAND } from '@/lib/constants'
-import { PRODUCT_STATUS, PRODUCT_TYPES } from '@/lib/products/mapProduct'
+import { PRODUCT_STATUS, PRODUCT_TYPES, mapProduct } from '@/lib/products/mapProduct'
 import { MOVEMENT_TYPES } from '@/lib/control/mapStockMovement'
 import { PATHS } from '@/router/paths'
 import { toastError, toastSuccess } from '@/lib/toast'
+import { apiClient } from '@/api/api'
+import { endpoints } from '@/api/endpoints'
+import { useMatchingSelection } from '@/hooks/shared/useMatchingSelection'
 
 export function ProductsPage() {
   const navigate = useNavigate()
@@ -66,7 +69,7 @@ export function ProductsPage() {
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
   // Per-id eligibility for bulk permanent delete (same rules as single Remove dialog)
   const [bulkDeleteInfos, setBulkDeleteInfos] = useState([])
-
+const [bulkIds, setBulkIds] = useState([])
   // Add Stock → Stock In dialog, pre-seeded with the catalog row
   const [stockOpen, setStockOpen] = useState(false)
   const [stockProduct, setStockProduct] = useState(null)
@@ -78,21 +81,54 @@ export function ProductsPage() {
   const activeParents = (catalog.parents || []).filter((row) => row.isActive !== false)
   const activeSubs = (selectedCategorySubs || []).filter((row) => row.isActive !== false)
 
-  // Drop selection when list filters / page change
-  useEffect(() => {
-    setSelectedIds([])
-  }, [
-    filters.page,
-    filters.limit,
-    filters.q,
-    filters.type,
-    filters.status,
-    filters.categoryId,
-    filters.subcategoryId,
-    filters.productId,
-    filters.variantTypeId,
-    filters.variantValueId,
-  ])
+  const selection = useMatchingSelection({
+  total: pagination?.total ?? 0,
+  items,
+  resetKey: JSON.stringify([
+    filters.q, filters.type, filters.status,
+    filters.categoryId, filters.subcategoryId, filters.productId,
+    filters.variantTypeId, filters.variantValueId,
+  ]),
+})
+
+// Saare matching products (har page) laata hai, same filters ke saath
+async function fetchAllMatchingProducts() {
+  const all = []
+  let pageNo = 1
+  for (;;) {
+    const res = await apiClient.get(endpoints.products.list, {
+      page: pageNo,
+      limit: 50,
+      q: filters.q || undefined,
+      type: filters.type || undefined,
+      categoryId: filters.categoryId || undefined,
+      subcategoryId: filters.subcategoryId || undefined,
+      productId: filters.productId || undefined,
+      variantTypeId: filters.variantTypeId || undefined,
+      variantValueId: filters.variantValueId || undefined,
+      status: filters.status || 'active',
+    })
+    if (!res.success) throw new Error(res.error || 'Failed to load products')
+    const data = res.data || {}
+    const rows = Array.isArray(data.items) ? data.items : []
+    all.push(...rows.map(mapProduct))
+    if (!rows.length || pageNo >= (data.pagination?.pageCount || 1)) break
+    pageNo += 1
+  }
+  return all
+}
+
+async function resolveSelectedProducts() {
+  const all = await fetchAllMatchingProducts()
+  return selection.selectAllMatching
+    ? all.filter((p) => !selection.deselectedIds.has(p.id))
+    : all.filter((p) => selection.selectedIds.has(p.id))
+}
+
+async function resolveSelectedIds() {
+  if (!selection.selectAllMatching) return [...selection.selectedIds]
+  return (await resolveSelectedProducts()).map((p) => p.id)
+}
 
   // Bundle → Edit Bundle page; items → Edit Item page
   function handleEdit(row) {
@@ -177,7 +213,9 @@ export function ProductsPage() {
     if (!deleteTarget?.id) return
     setDeleteLoading(true)
     try {
-      const result = await deleteProduct({ id: deleteTarget.id, permanent: false })
+      if (!selection.selectAllMatching && selection.isRowSelected(deleteTarget.id)) {
+  selection.toggleRow(deleteTarget.id)
+}
       if (result.success) {
         toastSuccess('Product deactivated')
         setSelectedIds((prev) => prev.filter((id) => id !== deleteTarget.id))
@@ -200,7 +238,9 @@ export function ProductsPage() {
         toastSuccess('Product permanently deleted')
         setDeleteTarget(null)
         setDeleteInfo(null)
-        setSelectedIds((prev) => prev.filter((id) => id !== deleteTarget.id))
+        if (!selection.selectAllMatching && selection.isRowSelected(deleteTarget.id)) {
+  selection.toggleRow(deleteTarget.id)
+}
       } else {
         toastError(result.error || 'Permanent delete failed')
       }
@@ -209,41 +249,47 @@ export function ProductsPage() {
     }
   }
 
-  async function openBulkDelete() {
-    if (!selectedIds.length) return
-    setBulkDeleteOpen(true)
-    setBulkDeleteInfos([])
-    setBulkDeleteLoading(true)
-    try {
-      const results = await Promise.all(
-        selectedIds.map(async (id) => {
-          const result = await fetchProductDeleteInfo(id)
-          return {
-            id,
-            found: Boolean(result.success && result.data?.found !== false),
-            canPermanentDelete: Boolean(result.success && result.data?.canPermanentDelete),
-            reason: result.success ? result.data?.reason : result.error,
-          }
-        }),
-      )
-      setBulkDeleteInfos(results)
-    } finally {
-      setBulkDeleteLoading(false)
-    }
+ async function openBulkDelete() {
+  if (!selection.selectedCount) return
+  setBulkDeleteOpen(true)
+  setBulkDeleteInfos([])
+  setBulkIds([])
+  setBulkDeleteLoading(true)
+  try {
+    const ids = await resolveSelectedIds()
+    setBulkIds(ids)
+    const results = await Promise.all(
+      ids.map(async (id) => {
+        const result = await fetchProductDeleteInfo(id)
+        return {
+          id,
+          found: Boolean(result.success && result.data?.found !== false),
+          canPermanentDelete: Boolean(result.success && result.data?.canPermanentDelete),
+          reason: result.success ? result.data?.reason : result.error,
+        }
+      }),
+    )
+    setBulkDeleteInfos(results)
+  } catch (err) {
+    toastError(err?.message || 'Failed to load selected products')
+    setBulkDeleteOpen(false)
+  } finally {
+    setBulkDeleteLoading(false)
   }
+}
 
   async function handleBulkDeactivate() {
-    if (!selectedIds.length) return
+    if (!bulkIds.length) return
     setBulkDeleting(true)
     try {
       let ok = 0
       let failed = 0
-      for (const id of selectedIds) {
+     for (const id of bulkIds) {
         const result = await deleteProduct({ id, permanent: false })
         if (result.success) ok += 1
         else failed += 1
       }
-      setSelectedIds([])
+    selection.toggleAllMatching(false)
       setBulkDeleteOpen(false)
       setBulkDeleteInfos([])
       void reload()
@@ -256,7 +302,7 @@ export function ProductsPage() {
   }
 
   async function handleBulkPermanentDelete() {
-    if (!selectedIds.length || !bulkCanPermanentDelete) return
+   if (!bulkIds.length || !bulkCanPermanentDelete)return
     setBulkDeleting(true)
     try {
       let ok = 0
@@ -282,7 +328,7 @@ export function ProductsPage() {
     deleteTarget?.status !== PRODUCT_STATUS.INACTIVE && deleteTarget?.status !== 'close'
   const canPermanentDelete = Boolean(deleteInfo?.canPermanentDelete)
 
-  const bulkCount = selectedIds.length
+ const bulkCount = bulkIds.length || selection.selectedCount
   const bulkInfosReady = bulkDeleteInfos.length === bulkCount && bulkCount > 0
   const bulkCanPermanentDelete =
     bulkInfosReady && bulkDeleteInfos.every((row) => row.canPermanentDelete)
@@ -299,11 +345,25 @@ export function ProductsPage() {
       : `${bulkCount} selected product${bulkCount === 1 ? '' : 's'}: deactivate hides them from active lists and POS sync. Permanent delete is blocked for ${bulkBlockedCount || 'some'} item(s) used in sales, a bundle, or with stock still on hand.`
     : null
 
-  async function handleExport() {
-    const result = await exportCsv()
-    if (result.success) toastSuccess(`Exported ${result.data.exported} products (Excel)`)
-    else toastError(result.error || 'Export failed')
+async function handleExport() {
+  let barcodes
+  if (selection.selectedCount > 0) {
+    try {
+      const picked = await resolveSelectedProducts()
+      barcodes = picked.map((p) => p.barcode).filter(Boolean)
+    } catch (err) {
+      toastError(err?.message || 'Failed to load selected products')
+      return
+    }
+    if (!barcodes.length) {
+      toastError('Selected products have no barcode to export')
+      return
+    }
   }
+  const result = await exportCsv(barcodes ? { barcodes } : undefined)
+  if (result.success) toastSuccess(`Exported ${result.data.exported} products (Excel)`)
+  else toastError(result.error || 'Export failed')
+}
 
   async function handleImport(rows) {
     const result = await importProducts(rows)
@@ -420,8 +480,13 @@ export function ProductsPage() {
           loading={loading}
           pagination={pagination}
           statusUpdatingId={statusUpdatingId}
-          selectedIds={selectedIds}
-          onSelectedIdsChange={setSelectedIds}
+          selectedCount={selection.selectedCount}
+          isRowSelected={selection.isRowSelected}
+          onToggleRow={selection.toggleRow}
+          allVisibleSelected={selection.allVisibleSelected}
+          someVisibleSelected={selection.someVisibleSelected}
+          onToggleAllMatching={selection.toggleAllMatching}
+          onClearSelection={() => selection.toggleAllMatching(false)}
           bulkDeleting={bulkDeleting}
           onBulkDelete={openBulkDelete}
           onPageChange={setPage}

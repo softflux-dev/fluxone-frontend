@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Check } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -7,7 +6,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { WholeNumberInput } from '@/components/shared/WholeNumberInput'
 import { ProductImageCell } from '@/components/feature/products/ProductStatusToggle'
 import { apiClient } from '@/api/api'
@@ -16,6 +14,7 @@ import { BRAND } from '@/lib/constants'
 import { displayItemCode } from '@/lib/formatDisplayId'
 import { toastError, toastSuccess } from '@/lib/toast'
 import { TableRowsSkeleton } from '@/components/ui/skeleton'
+import { ActionIconButton } from '@/components/shared/ActionIconButton'
 
 // Override Dialog defaults (md:max-w-xl) so price columns stay visible.
 const DIALOG_WIDTH =
@@ -162,17 +161,14 @@ export function DailyPriceReviewDialog({ open, onOpenChange, onChanged }) {
                         />
                       </label>
                     </div>
-                    <Button
-                      type="button"
-                      variant="brand"
-                      className="mt-3 w-full"
-                      style={{ background: BRAND.purple }}
-                      loading={savingId === row.id}
+                    <div className="mt-3">
+                    <ActionIconButton
+                      action="approve"
+                      label="Save"
+                      disabled={savingId === row.id}
                       onClick={() => void handleSaveRow(row)}
-                    >
-                      <Check className="size-4" />
-                      Save
-                    </Button>
+                    />
+                  </div>
                   </li>
                 )
               })}
@@ -237,20 +233,14 @@ export function DailyPriceReviewDialog({ open, onOpenChange, onChanged }) {
                             }
                           />
                         </td>
-                        <td className="px-3 py-2.5 align-middle">
-                          <Button
-                            type="button"
-                            variant="brand"
-                            size="sm"
-                            className="h-9"
-                            style={{ background: BRAND.purple }}
-                            loading={savingId === row.id}
-                            onClick={() => void handleSaveRow(row)}
-                          >
-                            <Check className="size-4" />
-                            Save
-                          </Button>
-                        </td>
+                      <td className="px-3 py-2.5 align-middle">
+                      <ActionIconButton
+                        action="approve"
+                        label="Save"
+                        disabled={savingId === row.id}
+                        onClick={() => void handleSaveRow(row)}
+                      />
+                    </td>
                       </tr>
                     )
                   })}

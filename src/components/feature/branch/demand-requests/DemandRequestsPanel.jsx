@@ -92,6 +92,20 @@ export function DemandRequestsPanel() {
     next.delete('highlight')
     setSearchParams(next, { replace: true })
   }
+// Helper that closes the detail panel.
+  function closeDetail() {
+  setViewOrderId(null)
+  clearDetail()
+  clearHighlightParam()
+}
+
+// Close the detail after Approve and Reject.
+
+function handleReject(row) {
+  setRejectTarget(row)
+  closeDetail()
+  setRejectOpen(true)
+}
 
   function handleView(row) {
     if (!row?.id) return
@@ -178,18 +192,14 @@ export function DemandRequestsPanel() {
 
       <MotionReveal delay={0.08}>
         <DemandRequestsTable
-          items={items}
-          loading={loading}
-          mutating={mutating}
-          highlightId={highlightId}
-          pagination={pagination}
-          onPageChange={setPage}
-          onPageSizeChange={(limit) => updateFilters({ limit })}
-          onView={handleView}
-          onEdit={handleEdit}
-          onApprove={handleApprove}
-          onReject={handleReject}
-        />
+  items={items}
+  loading={loading}
+  highlightId={highlightId}
+  pagination={pagination}
+  onPageChange={setPage}
+  onPageSizeChange={(limit) => updateFilters({ limit })}
+  onView={handleView}
+/>
       </MotionReveal>
 
       <OrderDetailPanel
@@ -206,7 +216,11 @@ export function DemandRequestsPanel() {
             clearHighlightParam()
           }
         }}
-        onPrint={handlePrint}
+          onPrint={handlePrint}
+          actionsBusy={mutating}
+          onEdit={handleEdit}
+          onApprove={handleApprove}
+          onReject={handleReject}
       />
 
       <DemandRequestRejectDialog

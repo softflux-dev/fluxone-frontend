@@ -10,6 +10,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  TableGroupHead,
+  TableSubHead,
   TablePagination,
 } from '@/components/ui/table'
 import { BRAND, UI_RADIUS } from '@/lib/constants'
@@ -31,6 +33,16 @@ import {
 import { BadgePercent, PackageOpen, Receipt } from 'lucide-react'
 import { TableRowsSkeleton } from '@/components/ui/skeleton'
 
+function priceGroupSpan(v) {
+  return (
+    (v.baseCost ? 1 : 0) +
+    (v.sellingPrice ? 1 : 0) +
+    (v.tax ? 2 : 0) +
+    (v.finalPrice ? 2 : 0) + // Discount % + Final
+    (v.profit ? 2 : 0)
+  )
+}
+
 function resolveRowPricing(p) {
   const sellingPrice = Number(p.sellingPrice ?? 0)
   const discountPercent = Number(p.discountPercent ?? 0)
@@ -42,7 +54,10 @@ function resolveRowPricing(p) {
     p.marginAmount ?? actualMarginAmount(baseCost, sellingPrice)
   const marginPercent =
     p.marginPercent ?? actualMarginPercent(baseCost, sellingPrice)
-  return { sellingPrice, finalPrice, marginAmount, marginPercent, baseCost }
+  const profitAmount = p.profitAmount ?? Math.round((finalPrice - baseCost) * 100) / 100
+  const discountPct = discountPercent
+  const profitPercent = p.profitPercent ?? (baseCost > 0 ? Math.round((profitAmount / baseCost) * 10000) / 100 : 0)
+  return { discountPct, sellingPrice, finalPrice, marginAmount, marginPercent, baseCost, profitAmount, profitPercent }
 }
 
 export function TaxProfitTable({
@@ -52,10 +67,12 @@ export function TaxProfitTable({
   loading,
   mutating,
   hasFilters,
-  selectedIds,
-  isAllSelected,
-  onToggleSelectAll,
+  selectedCount,
+  isRowSelected,
   onToggleRow,
+  allVisibleSelected,
+  someVisibleSelected,
+  onToggleAllMatching,
   visibleColumns,
   pagination,
   page,
@@ -71,17 +88,17 @@ export function TaxProfitTable({
       description={`Currency: ${currency}`}
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          {selectedIds.length > 0 && (
+          {selectedCount > 0 && (
             <Badge
               variant="outline"
               className="bg-purple-50 text-purple-900 border-purple-200 text-xs font-bold px-2.5 py-1"
             >
-              {selectedIds.length} Selected
+              {selectedCount} Selected
             </Badge>
           )}
           <Button
             type="button"
-            disabled={selectedIds.length === 0 || mutating}
+            disabled={selectedCount === 0 || mutating}
             onClick={onOpenProfitDialog}
             size="sm"
             className={cn(
@@ -95,7 +112,7 @@ export function TaxProfitTable({
           </Button>
           <Button
             type="button"
-            disabled={selectedIds.length === 0 || mutating}
+            disabled={selectedCount === 0 || mutating}
             onClick={onOpenTaxDialog}
             size="sm"
             className={cn(
@@ -154,8 +171,8 @@ export function TaxProfitTable({
 
           <div className="space-y-3 md:hidden">
             {products.map((p) => {
-              const isChecked = selectedIds.includes(p.id)
-              const { sellingPrice, finalPrice, marginAmount, marginPercent, baseCost } =
+              const isChecked = !!isRowSelected?.(p.id)
+              const { sellingPrice, finalPrice, profitAmount, profitPercent, baseCost } =
                 resolveRowPricing(p)
 
               return (
@@ -168,13 +185,15 @@ export function TaxProfitTable({
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => onToggleRow(p.id)}
-                      className="mt-1 rounded text-purple-600 focus:ring-0"
-                      aria-label={`Select ${p.name}`}
-                    />
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = !allVisibleSelected && someVisibleSelected
+                    }}
+                    onChange={() => onToggleAllMatching?.(!allVisibleSelected)}
+                    aria-label="Select all matching filtered rows"
+                  />
                     {p.image ? (
                       <img
                         src={p.image}
@@ -203,9 +222,9 @@ export function TaxProfitTable({
                         <span
                           className="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700"
                           title={PROFIT_PCT_FORMULA}
-                          aria-label={`Profit ${p.profitPct} percent`}
+                          aria-label={`Profit ${profitPercent} percent`}
                         >
-                          +{p.profitPct}%
+                          {profitPercent}%
                         </span>
                         <span
                           className="inline-flex items-center rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700"
@@ -239,8 +258,7 @@ export function TaxProfitTable({
                           </p>
                         </div>
                         <p className="text-[10px] text-slate-400" title={MARGIN_FORMULA}>
-                          Margin {formatPlain(marginAmount)}
-                          {marginPercent ? ` (${marginPercent}%)` : ''}
+                          Profit {formatPlain(profitAmount)} ({profitPercent}%) · Sold {p.unitsSold ?? 0} · Rev {formatPlain(p.totalRevenue ?? 0)}
                         </p>
                       </div>
                     </div>
@@ -254,70 +272,86 @@ export function TaxProfitTable({
             <Table className="min-w-[56rem] text-left text-sm">
               <TableHeader>
                 <TableRow className="text-xs text-slate-500 uppercase">
-                  <TableHead className="w-10 px-3 py-3 text-center">
+                  <TableHead rowSpan={2} className="w-10 px-3 py-3 text-center align-middle">
                     <input
                       type="checkbox"
-                      checked={isAllSelected}
-                      onChange={onToggleSelectAll}
+                      checked={allVisibleSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = !allVisibleSelected && someVisibleSelected
+                      }}
+                      onChange={() => onToggleAllMatching?.(!allVisibleSelected)}
                       className="rounded text-purple-600 focus:ring-0"
                     />
                   </TableHead>
                   {visibleColumns.id && (
-                    <TableHead className="px-3 py-3 font-medium">SKU ID</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">SKU ID</TableHead>
                   )}
                   {visibleColumns.image && (
-                    <TableHead className="px-3 py-3 font-medium">Image</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">Image</TableHead>
                   )}
                   {visibleColumns.name && (
-                    <TableHead className="px-3 py-3 font-medium">Product</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">Product</TableHead>
                   )}
                   {visibleColumns.barcode && (
-                    <TableHead className="hidden px-3 py-3 font-medium lg:table-cell">
+                    <TableHead rowSpan={2} className="hidden px-3 py-3 align-middle font-medium lg:table-cell">
                       Barcode
                     </TableHead>
                   )}
                   {visibleColumns.category && (
-                    <TableHead className="px-3 py-3 font-medium">Category</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">Category</TableHead>
                   )}
+                  {priceGroupSpan(visibleColumns) > 0 && (
+                    <TableGroupHead colSpan={priceGroupSpan(visibleColumns)}>
+                      Price
+                    </TableGroupHead>
+                  )}
+                  {visibleColumns.unitsSold && (
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">
+                      Units Sold
+                    </TableHead>
+                  )}
+                  {visibleColumns.totalRevenue && (
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">
+                      Revenue
+                    </TableHead>
+                  )}
+                  {visibleColumns.totalProfit && (
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">
+                      Total Profit
+                    </TableHead>
+                  )}
+                </TableRow>
+                <TableRow className="text-xs text-slate-500 uppercase">
                   {visibleColumns.baseCost && (
-                    <TableHead className="px-3 py-3 font-medium" title={PURCHASE_COST_FORMULA}>
-                      Purchase
-                    </TableHead>
-                  )}
-                  {visibleColumns.profitPct && (
-                    <TableHead className="px-3 py-3 font-medium" title={PROFIT_PCT_FORMULA}>
-                      Profit %
-                    </TableHead>
-                  )}
-                  {visibleColumns.taxPct && (
-                    <TableHead className="px-3 py-3 font-medium" title={TAX_PCT_FORMULA}>
-                      Tax %
-                    </TableHead>
+                    <TableSubHead title={PURCHASE_COST_FORMULA}>Purchase</TableSubHead>
                   )}
                   {visibleColumns.sellingPrice && (
-                    <TableHead className="px-3 py-3 font-medium" title={SELLING_PRICE_FORMULA}>
-                      Selling
-                    </TableHead>
+                    <TableSubHead title={SELLING_PRICE_FORMULA}>Selling</TableSubHead>
                   )}
-                  {visibleColumns.margin && (
-                    <TableHead className="px-3 py-3 font-medium" title={MARGIN_FORMULA}>
-                      Margin
-                    </TableHead>
+                  {visibleColumns.tax && (
+                    <>
+                      <TableSubHead title={TAX_PCT_FORMULA}>Tax %</TableSubHead>
+                      <TableSubHead title={TAX_PCT_FORMULA}>Tax</TableSubHead>
+                    </>
                   )}
                   {visibleColumns.finalPrice && (
-                    <TableHead
-                      className="sticky right-0 z-[1] bg-muted px-3 py-3 text-right font-bold text-foreground"
-                      title={FINAL_PRICE_FORMULA}
-                    >
-                      Final (incl. tax)
-                    </TableHead>
+                    <>
+                      <TableSubHead>Discount %</TableSubHead>
+                      <TableSubHead title={FINAL_PRICE_FORMULA}>Final</TableSubHead>
+                    </>
+                  )}
+                  {visibleColumns.profit && (
+                    <>
+                      <TableSubHead title={PROFIT_PCT_FORMULA}>Profit %</TableSubHead>
+                      <TableSubHead title={MARGIN_FORMULA}>Profit</TableSubHead>
+                    </>
                   )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {products.map((p) => {
-                  const isChecked = selectedIds.includes(p.id)
-                  const { sellingPrice, finalPrice, marginAmount, marginPercent, baseCost } =
+                  const isChecked = !!isRowSelected?.(p.id)
+                  const { discountPct, sellingPrice, finalPrice, profitAmount, profitPercent, baseCost } =
                     resolveRowPricing(p)
 
                   return (
@@ -378,60 +412,68 @@ export function TaxProfitTable({
                       )}
 
                       {visibleColumns.baseCost && (
-                        <TableCell className="px-3 py-3 font-semibold text-slate-800 text-xs">
+                        <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
                           {formatPlain(baseCost)}
                         </TableCell>
                       )}
 
-                      {visibleColumns.profitPct && (
-                        <TableCell className="px-3 py-3">
-                          <span
-                            className="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700"
-                            title={PROFIT_PCT_FORMULA}
-                          >
-                            +{p.profitPct}%
-                          </span>
-                        </TableCell>
-                      )}
-
-                      {visibleColumns.taxPct && (
-                        <TableCell className="px-3 py-3">
-                          <span
-                            className="inline-flex items-center rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700"
-                            title={TAX_PCT_FORMULA}
-                          >
-                            {p.taxPct > 0 ? `${p.taxPct}%` : '0%'}
-                          </span>
-                        </TableCell>
-                      )}
-
                       {visibleColumns.sellingPrice && (
-                        <TableCell className="px-3 py-3 font-semibold text-slate-800 text-xs">
+                        <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
                           {formatPlain(sellingPrice)}
                         </TableCell>
                       )}
 
-                      {visibleColumns.margin && (
-                        <TableCell className="px-3 py-3 text-xs text-slate-700">
-                          <span className="font-semibold">{formatPlain(marginAmount)}</span>
-                          {marginPercent ? (
-                            <span className="mt-0.5 block text-[10px] text-slate-400">
-                              {marginPercent}%
-                            </span>
-                          ) : null}
-                        </TableCell>
+                      {visibleColumns.tax && (
+                        <>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {`${p.taxPct ?? 0}%`}
+                          </TableCell>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {formatPlain(p.taxAmount ?? 0)}
+                          </TableCell>
+                        </>
                       )}
 
                       {visibleColumns.finalPrice && (
-                        <TableCell className="sticky right-0 z-[1] bg-card px-3 py-3 text-right group-hover:bg-muted">
-                          <span
-                            className="font-extrabold text-sm text-purple-950 block"
-                            title={FINAL_PRICE_FORMULA}
-                          >
+                        <>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {`${discountPct}%`}
+                          </TableCell>
+                          <TableCell className="px-3 py-3 text-sm font-extrabold text-purple-950">
                             {formatPlain(finalPrice)}
-                          </span>
+                          </TableCell>
+                        </>
+                      )}
+
+                      {visibleColumns.profit && (
+                        <>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {`${profitPercent}%`}
+                          </TableCell>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {formatPlain(profitAmount)}
+                          </TableCell>
+                        </>
+                      )}
+
+                      {visibleColumns.unitsSold && (
+                        <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                          {p.unitsSold ?? 0}
                         </TableCell>
                       )}
+
+                      {visibleColumns.totalRevenue && (
+                        <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                          {formatPlain(p.totalRevenue ?? 0)}
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.totalProfit && (
+                        <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                          {formatPlain(p.totalProfit ?? 0)}
+                        </TableCell>
+                      )}
+
                     </TableRow>
                   )
                 })}

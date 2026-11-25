@@ -1,30 +1,21 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { MotionHeader, MotionReveal } from '@/components/shared/MotionReveal'
 import { ProductCatalogFilters } from '@/components/shared/ProductCatalogFilters'
 import { SalesTable } from '@/components/feature/branch/sales/SalesTable'
-import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogCancelButton,
 } from '@/components/ui/dialog'
 import { useDebouncedValue } from '@/hooks/shared/useDebouncedValue'
 import { useClientPagination } from '@/hooks/shared/useClientPagination'
-import { BRAND } from '@/lib/constants'
 import { formatDateTime } from '@/lib/formatDateTime'
-import { toastError, toastSuccess } from '@/lib/toast'
 import { useCurrency } from '@/hooks/shared/useCurrency'
 import { useBranchSales } from '@/hooks/branch/useBranchSales'
 
 export function SalesPage() {
   const { format, currency: tenantCurrency } = useCurrency()
-  const { sales, categories, loading, fetchSales, fetchCategories, refundSale } = useBranchSales()
+  const { sales, categories, loading, fetchSales, fetchCategories } = useBranchSales()
   const {
     page,
     setPage,
@@ -45,8 +36,6 @@ export function SalesPage() {
   const [filterProduct, setFilterProduct] = useState('')
   const [filterVariantType, setFilterVariantType] = useState('')
   const [filterVariantValue, setFilterVariantValue] = useState('')
-  const [refundTarget, setRefundTarget] = useState(null)
-  const [refunding, setRefunding] = useState(false)
   const [invoiceTarget, setInvoiceTarget] = useState(null)
 
   useEffect(() => {
@@ -110,29 +99,6 @@ export function SalesPage() {
     setFilterVariantValue('')
   }
 
-  const handleRefund = async () => {
-    if (!refundTarget) return
-    setRefunding(true)
-    const res = await refundSale(refundTarget.id)
-    setRefunding(false)
-    if (res.success) {
-      toastSuccess('Sale refunded successfully')
-      setRefundTarget(null)
-      const params = {}
-      if (debouncedQ.trim()) params.q = debouncedQ.trim()
-      if (filterFrom) params.from = filterFrom
-      if (filterTo) params.to = filterTo
-      if (filterCategory) params.categoryId = filterCategory
-      if (filterSubcategory) params.subcategoryId = filterSubcategory
-      if (filterProduct) params.productId = filterProduct
-      if (filterVariantType) params.variantTypeId = filterVariantType
-      if (filterVariantValue) params.variantValueId = filterVariantValue
-      void fetchSales(params, { filterVariantType, filterVariantValue })
-    } else {
-      toastError(res.error || 'Failed to refund sale')
-    }
-  }
-
   const handlePrint = (sale) => {
     setInvoiceTarget(sale)
     setTimeout(() => {
@@ -148,7 +114,7 @@ export function SalesPage() {
         <PageHeader
           eyebrow="Transactions"
           title="Sales Management"
-          description="Transactions, refunds, and invoice print. Online customer management is Phase 2."
+          description="Transactions and invoice print. Online customer management is Phase 2."
         />
       </MotionHeader>
 
@@ -182,56 +148,11 @@ export function SalesPage() {
           pageSize={pageSize}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
-          onRefund={setRefundTarget}
           onPrint={handlePrint}
           filterFrom={filterFrom}
           filterTo={filterTo}
         />
       </MotionReveal>
-
-      <Dialog
-        open={Boolean(refundTarget)}
-        onOpenChange={(open) => {
-          if (!open) setRefundTarget(null)
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-rose-600">
-              <AlertTriangle className="size-5" />
-              Approve Refund request?
-            </DialogTitle>
-            <DialogDescription>
-              This will mark the selected invoice as **Refunded** and return the full payment amount
-              back to the customer.
-            </DialogDescription>
-          </DialogHeader>
-
-          {refundTarget && (
-            <div className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-              <div>
-                <strong>Invoice:</strong> {refundTarget.saleNumber}
-              </div>
-              <div>
-                <strong>Amount to Refund:</strong>{' '}
-                {money(refundTarget.finalAmount, refundTarget.currency)}
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <DialogCancelButton disabled={refunding} className="w-full sm:w-auto" />
-            <Button
-              onClick={handleRefund}
-              disabled={refunding}
-              className="w-full text-white sm:w-auto"
-              style={{ backgroundColor: BRAND.purple }}
-            >
-              {refunding ? 'Refunding…' : 'Approve Refund'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog
         open={Boolean(invoiceTarget)}
