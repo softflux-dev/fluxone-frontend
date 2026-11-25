@@ -80,10 +80,12 @@ export function formatOfferOptionLabel(offer) {
   if (!offer) return ''
   const name = offer.name || 'Offer'
   const percent = Number(offer.percent)
+  // categoryId null = applies to every category; say so in the picker
+  const scope = 'categoryId' in offer && !offer.categoryId ? ' · All categories' : ''
   if (percent && percent > 0 && !name.includes('%')) {
-    return `${name} – ${percent}%`
+    return `${name} – ${percent}%${scope}`
   }
-  return name
+  return `${name}${scope}`
 }
 
 /** Map selected offer → { offerId, discountPercent } for API (Discount & Offer = one promo). */
