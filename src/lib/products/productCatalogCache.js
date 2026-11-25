@@ -54,12 +54,18 @@ let cache = {
   fetchedAt: 0,
   inFlight: null,
   categoryActive: 'active',
+  categoryId: null,
 }
 // Bumped on category refresh so a stale full-catalog fetch cannot overwrite delete/status
 let cacheGeneration = 0
 
-function isFresh() {
-  return Boolean(cache.data) && Date.now() - cache.fetchedAt < TTL_MS
+function isFresh(categoryActive, categoryId) {
+  return (
+    Boolean(cache.data) &&
+    Date.now() - cache.fetchedAt < TTL_MS &&
+    cache.categoryActive === categoryActive &&
+    cache.categoryId === categoryId
+  )
 }
 
 function categoryQueryParams(active) {
@@ -94,10 +100,13 @@ function applyFull({ categories, taxes, offers, defaults }) {
 export async function getProductCatalog(options = {}) {
   const force = Boolean(options.force)
   const categoryActive = options.categoryActive || 'active'
-  cache.categoryActive = categoryActive
+  const categoryId = options.categoryId || null
 
-  if (!force && isFresh()) return cache.data
+  if (!force && isFresh(categoryActive, categoryId)) return cache.data
   if (!force && cache.inFlight) return cache.inFlight
+
+  cache.categoryActive = categoryActive
+  cache.categoryId = categoryId
 
   const generation = cacheGeneration
   cache.inFlight = (async () => {
@@ -105,7 +114,7 @@ export async function getProductCatalog(options = {}) {
       const [catsRes, taxesRes, offersRes, defaultsRes] = await Promise.all([
         apiClient.get(endpoints.products.categories, categoryQueryParams(categoryActive)),
         apiClient.get(endpoints.products.taxes),
-        apiClient.get(endpoints.products.offers),
+        apiClient.get(endpoints.products.offers, { categoryId }),
         apiClient.get(endpoints.products.taxProfitDefaults),
       ])
       // A category CRUD refresh landed first — keep that catalog, drop this stale apply

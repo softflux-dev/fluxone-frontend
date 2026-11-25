@@ -15,7 +15,8 @@ import { NativeSelect } from '@/components/ui/select'
 import { ControlCatalogFilters } from '@/components/feature/control/ControlCatalogFilters'
 import { ProductStockPickerList } from '@/components/feature/control/ProductStockPickerList'
 import { BRAND } from '@/lib/constants'
-import { PRODUCT_TYPES } from '@/lib/products/mapProduct'
+import { ProductImageCell } from '@/components/feature/products/ProductStatusToggle'
+import { money, PRODUCT_TYPES } from '@/lib/products/mapProduct'
 import { useFieldErrors } from '@/hooks/shared/useFieldErrors'
 import {
   fetchControlProductDetail,
@@ -46,6 +47,7 @@ function lineFromProduct(product) {
     productName: product.productName || product.name || 'Item',
     itemCode: product.itemCode || '',
     scale: product.scale || 'unit',
+    imageUrl: product.imageUrl || null,
     // Used to warn that Stock In assembles recipe components
     type: product.type || '',
     quantity: '1',
@@ -97,9 +99,13 @@ export function AddStockInDialog({
           productName: seed.productName || seed.name || 'Item',
           itemCode: seed.itemCode || '',
           scale: seed.scale || 'unit',
+          imageUrl: seed.imageUrl || null,
           quantity: '1',
           purchasePrice: '',
           sellingPrice: '',
+          type: seed.type || '',
+          prevPurchase: seed.purchasePrice,
+          prevSelling: seed.sellingPrice,
         },
       })
     }
@@ -331,17 +337,66 @@ export function AddStockInDialog({
               </p>
             ) : null}
             <ul className="max-h-64 space-y-2 overflow-y-auto text-sm">
-              {selectedLines.map((row) => (
-                <li key={row.productId} className="rounded-lg border border-border px-3 py-2">
-                  <p className="font-semibold text-slate-900">{row.productName}</p>
-                  <p className="text-xs text-slate-500">
-                    Qty {row.quantity}
-                    {row.type === PRODUCT_TYPES.BUNDLE ? ' · Bundle (assembles components)' : ''}
-                    {row.purchasePrice !== '' ? ` · Purchase ${row.purchasePrice}` : ''}
-                    {row.sellingPrice !== '' ? ` · Selling ${row.sellingPrice}` : ''}
-                  </p>
-                </li>
-              ))}
+              {selectedLines.map((row) => {
+                const newPurchase =
+                  row.purchasePrice === '' || row.purchasePrice == null
+                    ? null
+                    : Number(row.purchasePrice)
+                const newSelling =
+                  row.sellingPrice === '' || row.sellingPrice == null
+                    ? null
+                    : Number(row.sellingPrice)
+                const purchaseChanged =
+                  newPurchase != null && newPurchase !== row.prevPurchase
+                const sellingChanged =
+                  newSelling != null && newSelling !== row.prevSelling
+                const formatPrice = (v) =>
+                  v == null || !Number.isFinite(v) ? '--' : money(v)
+
+                return (
+                  <li
+                    key={row.productId}
+                    className="rounded-lg border border-border px-3 py-2 flex items-start gap-3"
+                  >
+                    <ProductImageCell src={row.imageUrl} name={row.productName} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-900 truncate" title={row.productName}>
+                        {row.productName}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        <span className="font-medium text-emerald-600">Qty {row.quantity}</span>{' '}
+                        {row.type === PRODUCT_TYPES.BUNDLE && (
+                          <span>· Bundle (assembles components)</span>
+                        )}
+                      </p>
+                      {(row.prevPurchase != null &&
+                        Number.isFinite(row.prevPurchase) &&
+                        row.prevPurchase > 0) && (
+                        <p className="text-xs text-slate-500">
+                          Current purchase price: {formatPrice(row.prevPurchase)}
+                          {purchaseChanged ? (
+                            <span className="ml-1 text-emerald-600 font-medium">
+                              → New: {formatPrice(newPurchase)}
+                            </span>
+                          ) : null}
+                        </p>
+                      )}
+                      {(row.prevSelling != null &&
+                        Number.isFinite(row.prevSelling) &&
+                        row.prevSelling > 0) && (
+                        <p className="text-xs text-slate-500">
+                          Current selling price: {formatPrice(row.prevSelling)}
+                          {sellingChanged ? (
+                            <span className="ml-1 text-emerald-600 font-medium">
+                              → New: {formatPrice(newSelling)}
+                            </span>
+                          ) : null}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         ) : null}

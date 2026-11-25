@@ -247,85 +247,144 @@ function invoiceItemRows(invoice) {
 const ITEM_HEADERS = ['Item', 'Variant Type', 'Qty', 'Previous unit price', 'Line total']
 
 // Single-invoice items Excel — INV-2026-00143-items.xls
-export function exportPurchaseOrderInvoiceItemsExcel(invoice) {
+// Single-invoice items Excel — INV-2026-00143-items.xlsx
+export async function exportPurchaseOrderInvoiceItemsExcel(invoice) {
   if (!invoice) throw new Error('Invoice is missing')
   const rows = invoiceItemRows(invoice)
   if (!rows.length) throw new Error('No invoice items to export')
-  const filename = `${safeFilename(invoice.invoiceNumber || 'invoice')}-items.xls`
-  exportRowsToStyledExcel({
+
+  const { count, amount } = invoiceTotals(invoice)
+  // Total row: Item column = number of items, Line total column = sum
+  const rowsWithTotal = [...rows, [count, '', '', '', amount]]
+
+  const filename = `${safeFilename(invoice.invoiceNumber || 'invoice')}-items.xlsx`
+  await exportRowsToStyledExcel({
     filename,
     headers: ITEM_HEADERS,
-    rows,
+    rows: rowsWithTotal,
     sheetName: sheetNameForInvoice(invoice, 0),
     freezeHeader: true,
-    enableFilter: true,
+    enableFilter: false, // a filter/sort would move the Total row
+    boldLastRow: true,   // new option, added in Step 2
   })
   return { filename, count: rows.length }
 }
 
+function invoiceTotals(invoice) {
+  const items = invoiceItems(invoice)
+  const amount = items.reduce((sum, line) => {
+    const qty = Number(line.quantity) || 0
+    const unit = Number(line.previousUnitPrice) || 0
+    return sum + (Number(line.lineTotal) || qty * unit)
+  }, 0)
+  return { count: items.length, amount: Number(amount.toFixed(2)) }
+}
+
 // One workbook per order — one sheet per supplier invoice
-export function exportPurchaseOrderInvoicesWorkbook(invoices = [], { orderNumber = '' } = {}) {
+const XLSX_PURPLE = 'FF8E238F' // same purple as csvExport.js
+const XLSX_FONT = 'Times New Roman'
+
+// One workbook per order — one sheet per supplier invoice (works for 1 or many)
+export async function exportPurchaseOrderInvoicesWorkbook(invoices = [], { orderNumber = '' } = {}) {
   const list = Array.isArray(invoices) ? invoices.filter(Boolean) : []
   if (!list.length) throw new Error('No invoices to export')
 
-  const worksheets = list
-    .map((invoice, index) => {
-      const rows = invoiceItemRows(invoice)
-      const name = escapeXml(sheetNameForInvoice(invoice, index))
-      const headerCells = ITEM_HEADERS.map(
-        (h) => `<Cell><Data ss:Type="String">${escapeXml(h)}</Data></Cell>`,
-      ).join('')
-      const metaRows = [
-        ['Invoice #', invoice.invoiceNumber || ''],
-        ['Invoice date', formatDateLine(invoice.invoiceDate)],
-        ['Supplier', invoice.supplier?.companyName || ''],
-        ['Order #', invoice.orderNumber || orderNumber || ''],
-        [],
-      ]
-        .map((pair) => {
-          if (!pair.length) {
-            return '<Row></Row>'
-          }
-          return `<Row><Cell><Data ss:Type="String">${escapeXml(pair[0])}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(pair[1])}</Data></Cell></Row>`
-        })
-        .join('')
+  const { default: ExcelJS } = await import('exceljs')
+  const wb = new ExcelJS.Workbook()
+  const usedNames = new Set()
 
-      const dataRows = rows
-        .map((row) => {
-          const cells = row
-            .map((cell, i) => {
-              // Qty / Previous unit price / Line total (indices after Item + Variant Type)
-              const isNum = i >= 2
-              const type = isNum && cell !== '' && !Number.isNaN(Number(cell)) ? 'Number' : 'String'
-              return `<Cell><Data ss:Type="${type}">${escapeXml(cell)}</Data></Cell>`
-            })
-            .join('')
-          return `<Row>${cells}</Row>`
-        })
-        .join('')
+  list.forEach((invoice, index) => {
+    let name = sheetNameForInvoice(invoice, index)
+    if (usedNames.has(name)) name = `${name.slice(0, 27)}-${index + 1}`
+    usedNames.add(name)
+    const ws = wb.addWorksheet(name)
 
-      return `<Worksheet ss:Name="${name}">
-  <Table>
-    ${metaRows}
-    <Row>${headerCells}</Row>
-    ${dataRows}
-  </Table>
-</Worksheet>`
+    // Meta block (rows 1-4) + blank row 5
+    const meta = [
+      ['Invoice #', invoice.invoiceNumber || ''],
+      ['Invoice date', formatDateLine(invoice.invoiceDate)],
+      ['Supplier', invoice.supplier?.companyName || ''],
+      ['Order #', invoice.orderNumber || orderNumber || ''],
+    ]
+    meta.forEach((pair) => ws.addRow(pair).getCell(1).font = { name: XLSX_FONT, size: 11, bold: true })
+    ws.addRow([])
+
+    // Header row
+    const headerRowNumber = ws.rowCount + 1
+    const headerRow = ws.addRow(ITEM_HEADERS)
+
+    // Item rows
+    const items = invoiceItems(invoice)
+    let totalAmount = 0
+    items.forEach((line) => {
+      const qty = Number(line.quantity) || 0
+      const unit = Number(line.previousUnitPrice) || 0
+      const total = Number(line.lineTotal) || qty * unit
+      totalAmount += total
+      ws.addRow([line.itemName || '', line.variantLabel || '', qty, unit, total])
     })
-    .join('\n')
 
-  const xml = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:html="http://www.w3.org/TR/REC-html40">
-${worksheets}
-</Workbook>`
+      // Total row: label + count, label + sum
+    const totalRow = ws.addRow([
+      `Total items: ${items.length}`,
+      '',
+      '',
+      'Total amount',
+      Number(totalAmount.toFixed(2)),
+    ])
 
-  const filename = `${safeFilename(orderNumber || 'order')}-invoices.xls`
-  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' })
+    // Fonts for everything
+    ws.eachRow((row) => {
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        if (!cell.font || !cell.font.name) cell.font = { name: XLSX_FONT, size: 11 }
+      })
+    })
+
+    // Purple bold header
+    headerRow.height = 22
+    headerRow.eachCell({ includeEmpty: true }, (cell) => {
+      cell.font = { name: XLSX_FONT, size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLSX_PURPLE } }
+    })
+
+    // Total row: bold + light purple box with a purple top border
+    const TOTAL_FILL = 'FFF3E1F4'
+    totalRow.height = 22
+    for (let c = 1; c <= 5; c += 1) {
+      const cell = totalRow.getCell(c)
+      cell.font = { name: XLSX_FONT, size: 11, bold: true }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TOTAL_FILL } }
+      cell.border = {
+        top: { style: 'medium', color: { argb: XLSX_PURPLE } },
+        bottom: { style: 'thin', color: { argb: XLSX_PURPLE } },
+      }
+      cell.alignment = { vertical: 'middle', horizontal: c === 1 ? 'left' : 'right' }
+    }
+
+
+    // Number formats for price columns
+    ws.getColumn(4).numFmt = '0.00'
+    ws.getColumn(5).numFmt = '0.00'
+
+    // Freeze up to the header row
+    ws.views = [{ state: 'frozen', ySplit: headerRowNumber }]
+
+    // Column widths from the table (header + items + total)
+    ws.columns.forEach((col, i) => {
+      let max = 14
+      for (let r = headerRowNumber; r <= ws.rowCount; r += 1) {
+        const v = ws.getRow(r).getCell(i + 1).value
+        max = Math.max(max, String(v ?? '').length + 5)
+      }
+      col.width = Math.min(max, 60)
+    })
+  })
+
+  const filename = `${safeFilename(orderNumber || 'order')}-invoices.xlsx`
+  const buffer = await wb.xlsx.writeBuffer()
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url

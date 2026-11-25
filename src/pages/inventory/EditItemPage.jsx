@@ -71,10 +71,8 @@ function emptyForm() {
 export function EditItemPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { catalog, catalogLoading, fetchProductDetail, updateProduct } = useProducts(
-    {},
-    { skipList: true },
-  )
+  const { catalog, catalogLoading, fetchProductDetail, updateProduct, loadCatalog } =
+    useProducts({}, { skipList: true })
 
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('basic')
@@ -85,6 +83,13 @@ export function EditItemPage() {
   useEffect(() => {
     if (error) focusFieldById('edit-item-form-error')
   }, [error])
+
+  // Re-fetch offers when the category changes so the discount dropdown only
+  // shows offers scoped to the selected category (plus "All Categories").
+  useEffect(() => {
+    void loadCatalog({ categoryId: form.categoryId || undefined })
+  }, [form.categoryId, loadCatalog])
+
   const [saving, setSaving] = useState(false)
   const [hydrated, setHydrated] = useState(false)
 
@@ -516,11 +521,12 @@ export function EditItemPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="edit-name">Product name</Label>
-                <Input
-                  id="edit-name"
-                  value={form.name}
-                  onChange={(e) => patch('name', e.target.value)}
-                />
+               <Input
+                id="edit-name"
+                allowNumbers
+                value={form.name}
+                onChange={(e) => patch('name', e.target.value)}
+              />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="edit-desc">Description (optional)</Label>

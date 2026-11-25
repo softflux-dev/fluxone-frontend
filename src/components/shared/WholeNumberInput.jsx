@@ -48,6 +48,7 @@ export function WholeNumberInput({
   return (
     <Input
       type="number"
+      allowNegative={allowNegative}
       inputMode="numeric"
       step={1}
       min={allowNegative ? undefined : min}

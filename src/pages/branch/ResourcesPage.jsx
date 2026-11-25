@@ -161,6 +161,27 @@ export function ResourcesPage() {
     }
     setFormError(null)
 
+    // Client-side duplicate prevention: block creation/update when an active
+    // record with the same normalized name + company/brand + type already
+    // exists (excluding the record currently being edited).
+    const dupName = hName.trim().toLowerCase()
+    const dupCompany = hCompany.trim().toLowerCase()
+    const dupType = hType.toLowerCase()
+    const isDuplicate = hardwareList.some((hw) => {
+      if (hw.isActive === false) return false
+      if (!isCreate && hw.id === editingHardware?.id) return false
+      return (
+        String(hw.name || '').trim().toLowerCase() === dupName &&
+        String(hw.companyName || '').trim().toLowerCase() === dupCompany &&
+        String(hw.type || '').trim().toLowerCase() === dupType.toLowerCase()
+      )
+    })
+    if (isDuplicate) {
+      const msg = 'Hardware already exists. Duplicate hardware records are not allowed.'
+      setFormError(msg)
+      return toastError(msg)
+    }
+
     const formData = new FormData()
     formData.append('name', hName.trim())
     formData.append('companyName', hCompany.trim())

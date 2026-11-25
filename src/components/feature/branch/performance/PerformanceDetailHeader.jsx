@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { displayStaffRef } from '@/lib/formatDisplayId'
 
@@ -10,6 +11,8 @@ export function PerformanceDetailHeader({
   onScore,
   canScore = true,
 }) {
+  const isInactive = String(employee?.status || '').toLowerCase() === 'inactive'
+
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -20,9 +23,19 @@ export function PerformanceDetailHeader({
             className="size-14 shrink-0 rounded-xl"
           />
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold text-slate-900">
-              {employee?.fullName || 'Employee'}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-xl font-semibold text-slate-900">
+                {employee?.fullName || 'Employee'}
+              </h1>
+              {isInactive ? (
+                <Badge
+                  variant="outline"
+                  className="border-rose-200 bg-rose-50 text-[10px] font-semibold text-rose-700"
+                >
+                  Inactive
+                </Badge>
+              ) : null}
+            </div>
             <p className="mt-0.5 font-mono text-xs font-bold text-purple-800">
               {displayStaffRef({ staffId: employee?.staffId, id: employee?.staffId })}
             </p>

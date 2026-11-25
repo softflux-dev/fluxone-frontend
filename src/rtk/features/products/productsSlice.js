@@ -105,8 +105,8 @@ const initialState = {
 // Load shared category / tax / offer catalog
 export const loadProductCatalog = createAsyncThunk(
   'products/loadCatalog',
-  async ({ force = false, categoryActive = 'active' } = {}) => {
-    const next = await getProductCatalog({ force, categoryActive })
+  async ({ force = false, categoryActive = 'active', categoryId } = {}) => {
+    const next = await getProductCatalog({ force, categoryActive, categoryId })
     return catalogToState(next)
   },
 )
@@ -226,6 +226,8 @@ export const updateProduct = createAsyncThunk(
     const { json, image } = splitProductWrite(fields, { withConfirmed: false })
     const patchBody = { ...json }
     delete patchBody.confirmed
+    if ('offerId' in fields) patchBody.offerId = fields.offerId ?? null
+    if ('discountPercent' in fields) patchBody.discountPercent = fields.discountPercent ?? null
     delete patchBody._variantImages
     // Variant parent: don't send dummy purchase/selling (type often omitted on edit)
     if (fields.type === 'variant' || Array.isArray(fields.variants)) {

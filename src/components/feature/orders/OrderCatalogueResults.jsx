@@ -40,14 +40,28 @@ export function OrderCatalogueResults({
               key={product.id}
               className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
             >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-slate-900">
-                  {orderableDisplayName(product)}
-                </p>
-                <p className="truncate text-xs text-slate-500">
-                  {product.itemCode ? `${product.itemCode} · ` : ''}
-                  {product.parentId ? 'Variant product' : 'Normal product'}
-                </p>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={orderableDisplayName(product)}
+                    className="h-12 w-12 shrink-0 rounded-md border border-slate-200 object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[10px] text-slate-600">
+                    No img
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {orderableDisplayName(product)}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">
+                    {product.itemCode ? `${product.itemCode} · ` : ''}
+                    {product.parentId ? 'Variant product' : 'Normal product'}
+                  </p>
+                </div>
               </div>
               <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
                 <p className="text-xs text-slate-500 sm:text-right">

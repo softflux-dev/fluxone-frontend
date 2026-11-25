@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { TablePagination } from '@/components/ui/table'
 import { formatScorePercent } from '@/lib/branch/performanceScales'
 import {
   formatRelativeScored,
@@ -12,8 +13,10 @@ import { formatDateTimeInline } from '@/lib/formatDateTime'
 export function PerformanceHistoryTimeline({
   timeline,
   expandedId,
+  pageSize,
   onToggleExpand,
   onPageChange,
+  onPageSizeChange,
   highlightId,
 }) {
   const itemRefs = useRef({})
@@ -140,29 +143,16 @@ export function PerformanceHistoryTimeline({
         })}
       </div>
 
-      {timeline.pageCount > 1 ? (
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={timeline.page <= 1}
-            onClick={() => onPageChange?.(timeline.page - 1)}
-          >
-            Previous
-          </Button>
-          <span className="text-xs text-slate-500">
-            Page {timeline.page} of {timeline.pageCount}
-          </span>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={timeline.page >= timeline.pageCount}
-            onClick={() => onPageChange?.(timeline.page + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      ) : null}
+      <TablePagination
+        page={timeline.page}
+        pageCount={timeline.pageCount}
+        totalItems={timeline.total}
+        pageSize={pageSize}
+        pageSizeOptions={[5, 10, 25, 50]}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        alwaysShow
+      />
     </div>
   )
 }
