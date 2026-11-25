@@ -184,7 +184,10 @@ export const createProduct = createAsyncThunk(
     delete json._variantImages
     const path =
       fields.type === 'bundle' ? endpoints.products.bundles : endpoints.products.create
-    const result = await apiClient.post(path, json)
+    // Variant create runs many sequential inserts; the 45s default aborts while the server is still saving
+    const result = await apiClient.post(path, json, {
+      timeoutMs: fields.type === 'variant' ? 180_000 : undefined,
+    })
     if (!result.success) return rejectWithValue(result.error || 'Create failed')
 
     const product = mapProduct(result.data || {})

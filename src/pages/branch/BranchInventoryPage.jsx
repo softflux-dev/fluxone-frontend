@@ -12,6 +12,8 @@ import {
   TableHeader,
   TableBody,
   TableHead,
+  TableGroupHead,
+  TableSubHead,
   TableRow,
   TableCell,
   TablePagination,
@@ -34,6 +36,7 @@ import {
 } from '@/components/feature/branch/inventory/ShelfStockCell'
 import { DemandRequestsPanel } from '@/components/feature/branch/demand-requests/DemandRequestsPanel'
 import { getPricingBreakdown, formatMoney } from '@/lib/products/pricingBreakdown'
+import { useCurrency } from '@/hooks/shared/useCurrency'
 import { PricingBreakdown } from '@/components/feature/branch/inventory/PricingBreakdown'
 
 const INVENTORY_TABS = [
@@ -42,6 +45,7 @@ const INVENTORY_TABS = [
 ]
 
 export function BranchInventoryPage() {
+  const { currency } = useCurrency()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab') === 'demand' ? 'demand' : 'stock'
   const [activeTab, setActiveTab] = useState(tabFromUrl)
@@ -217,7 +221,11 @@ export function BranchInventoryPage() {
           </MotionReveal>
 
           <MotionReveal delay={0.04}>
-            <SurfaceCard title="Shelf Stock Levels" className="min-h-[400px]">
+            <SurfaceCard
+              title="Shelf Stock Levels"
+              description={`Currency: ${currency}`}
+              className="min-h-[400px]"
+            >
               {loading ? (
                 <TableRowsSkeleton rows={5} />
               ) : products.length === 0 ? (
@@ -342,20 +350,21 @@ export function BranchInventoryPage() {
                     <Table className="w-full min-w-[44rem] table-fixed text-left text-sm">
                       <TableHeader>
                       <TableRow className="text-xs text-slate-500 uppercase">
-                        <TableHead className="w-14 px-2 py-3 whitespace-nowrap">Image</TableHead>
-                        <TableHead className="w-[8rem] px-2 py-3 whitespace-nowrap">Name</TableHead>
-                        <TableHead className="w-[7rem] px-2 py-3 whitespace-nowrap">Category</TableHead>
-                        <TableHead className="w-[10rem] px-2 py-3 whitespace-nowrap">In Stock</TableHead>
-                        <TableHead className="w-[5.5rem] px-2 py-3 whitespace-nowrap">Status</TableHead>
-                        <TableHead className="w-[5rem] px-2 py-3 whitespace-nowrap">Purchase</TableHead>
-                        <TableHead className="w-[4rem] px-2 py-3 whitespace-nowrap">Profit %</TableHead>
-                        <TableHead className="w-[5rem] px-2 py-3 whitespace-nowrap">Selling</TableHead>
-                        <TableHead className="w-[5rem] px-2 py-3 whitespace-nowrap">Discount %</TableHead>
-                        <TableHead className="w-[3.5rem] px-2 py-3 whitespace-nowrap">Tax %</TableHead>
-                        <TableHead className="w-[6rem] px-2 py-3">
-                          Final Price <span className="block normal-case">(Incl. Tax)</span>
-                        </TableHead>
-                        <TableHead className="w-[10.5rem] px-2 py-3 whitespace-nowrap">Actions</TableHead>
+                        <TableHead rowSpan={2} className="w-14 px-2 py-3 align-middle whitespace-nowrap">Image</TableHead>
+                        <TableHead rowSpan={2} className="w-[8rem] px-2 py-3 align-middle whitespace-nowrap">Name</TableHead>
+                        <TableHead rowSpan={2} className="w-[7rem] px-2 py-3 align-middle whitespace-nowrap">Category</TableHead>
+                        <TableHead rowSpan={2} className="w-[10rem] px-2 py-3 align-middle whitespace-nowrap">In Stock</TableHead>
+                        <TableHead rowSpan={2} className="w-[5.5rem] px-2 py-3 align-middle whitespace-nowrap">Status</TableHead>
+                        <TableGroupHead colSpan={6}>Price</TableGroupHead>
+                        <TableHead rowSpan={2} className="w-[10.5rem] px-2 py-3 align-middle whitespace-nowrap">Actions</TableHead>
+                      </TableRow>
+                      <TableRow className="text-xs text-slate-500 uppercase">
+                        <TableSubHead className="w-[5rem]">Purchase</TableSubHead>
+                        <TableSubHead className="w-[5rem]">Selling</TableSubHead>
+                        <TableSubHead className="w-[4rem]">Tax %</TableSubHead>
+                        <TableSubHead className="w-[5rem]">Discount %</TableSubHead>
+                        <TableSubHead className="w-[5rem]">Final</TableSubHead>
+                        <TableSubHead className="w-[4rem]">Profit %</TableSubHead>
                       </TableRow>
 
                         
@@ -425,24 +434,22 @@ export function BranchInventoryPage() {
 
                               <TableCell className="px-2 py-3 font-mono text-xs">
                                 {pricing ? formatMoney(pricing.purchase) : '—'}
-                                </TableCell>
-
-                              <TableCell className="px-2 py-3 text-xs">
-                                {pricing ? `${pricing.profitPct}%` : '—'}
-                                </TableCell>
-
+                              </TableCell>
                               <TableCell className="px-2 py-3 font-mono text-xs">
                                 {pricing ? formatMoney(pricing.selling) : '—'}
-                                </TableCell>
-                              <TableCell className="px-2 py-3 text-xs">
-                                {pricing ? `${pricing.discountPct}%` : '—'}
-                                </TableCell>
+                              </TableCell>
                               <TableCell className="px-2 py-3 text-xs">
                                 {pricing ? `${pricing.taxPct}%` : '—'}
-                                </TableCell>
+                              </TableCell>
+                              <TableCell className="px-2 py-3 text-xs">
+                                {pricing ? `${pricing.discountPct}%` : '—'}
+                              </TableCell>
                               <TableCell className="px-2 py-3 font-mono text-xs font-bold">
                                 {pricing ? formatMoney(pricing.final) : '—'}
-                                </TableCell>
+                              </TableCell>
+                              <TableCell className="px-2 py-3 text-xs">
+                                {pricing ? `${pricing.profitPct}%` : '—'}
+                              </TableCell>
 
                               <TableCell className="px-2 py-3">
                                 {variantParent ? (
