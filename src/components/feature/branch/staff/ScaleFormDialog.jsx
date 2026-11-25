@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { WholeNumberInput } from '@/components/shared/WholeNumberInput'
 import {
+  SCALE_SUM_TARGET,
   parseScaleMaxPoints,
   sumScalePoints,
 } from '@/lib/branch/performanceScales'
@@ -70,7 +71,11 @@ export function ScaleFormDialog({
 
   const pointsHint = fieldErrors.maxPoints || rangeError
   const projectedTotal = pointsValue == null ? otherUsed : otherUsed + pointsValue
-  const canSubmit = Boolean(form.name.trim()) && parsed.ok
+  const scaleCapError =
+    pointsValue != null && projectedTotal > SCALE_SUM_TARGET
+      ? `Adding this criterion would exceed the 100-point cap (projected ${projectedTotal} pts). Reduce the points or remove another criterion first.`
+      : null
+  const canSubmit = Boolean(form.name.trim()) && parsed.ok && !scaleCapError
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -82,6 +87,8 @@ export function ScaleFormDialog({
 
     const check = parseScaleMaxPoints(form.maxPoints)
     if (!check.ok) errors.maxPoints = check.error
+
+    if (scaleCapError) errors.maxPoints = scaleCapError
 
     if (Object.keys(errors).length) {
       applyErrors(errors, FIELD_IDS, SCALE_FIELD_ORDER)
@@ -104,7 +111,7 @@ export function ScaleFormDialog({
       onOpenChange={onOpenChange}
       dirty={isDirty(form)}
       title={isEdit ? 'Edit Criterion' : 'Add Criterion'}
-      description="Max points per criterion must be a whole number of 1 or more."
+      description="Max points per criterion must be a whole number of 1 or more. Total scale cannot exceed 100 points."
       contentClassName="sm:max-w-md"
       footer={
         <>

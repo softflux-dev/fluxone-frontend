@@ -50,6 +50,11 @@ export function isScaleSumValid(criteria = []) {
   return sumScalePoints(criteria) > 0
 }
 
+// True when the draft criterion maxes already reach or exceed the 100-point cap
+export function isScaleSumOverTarget(criteria = []) {
+  return sumScalePoints(criteria) >= SCALE_SUM_TARGET
+}
+
 // Stable compare for draft vs published criteria (order-independent)
 export function criteriaSignature(criteria = []) {
   return [...criteria]
