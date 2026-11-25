@@ -19,6 +19,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableGroupHead,
+  TableSubHead,
 } from '@/components/ui/table'
 import { ProductImageCell } from '@/components/feature/products/ProductStatusToggle'
 import { apiClient } from '@/api/api'
@@ -28,8 +30,8 @@ import { mapProduct, PRODUCT_STATUS } from '@/lib/products/mapProduct'
 import { formatShelfQuantity, getShelfStockStatus } from '@/lib/products/shelfStockStatus'
 import { variantSkuLabel } from '@/lib/products/variantDisplay'
 import { cn } from '@/lib/utils'
-import { formatMoney } from '@/lib/currency'
-import { getPricingBreakdown } from '@/lib/products/pricingBreakdown'
+import { useCurrency } from '@/hooks/shared/useCurrency'
+import { getPricingBreakdown, formatMoney } from '@/lib/products/pricingBreakdown'
 import { PricingBreakdown } from '@/components/feature/branch/inventory/PricingBreakdown'
 
 async function fetchProductWithVariants(productId) {
@@ -52,6 +54,7 @@ export function BranchVariantStockDialog({
   const [error, setError] = useState(null)
   const [detail, setDetail] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
+  const { currency } = useCurrency()
 
   const load = useCallback(async () => {
     if (!open || !product?.id) return
@@ -89,7 +92,7 @@ export function BranchVariantStockDialog({
               <DialogDescription className="text-xs text-slate-500">
                 {loading
                   ? 'Loading variants…'
-                  : `${totalUnits.toLocaleString()} units · ${variants.length} variant${variants.length === 1 ? '' : 's'}`}
+                  : `Currency: ${currency} · ${totalUnits.toLocaleString()} units · ${variants.length} variant${variants.length === 1 ? '' : 's'}`}
               </DialogDescription>
             </div>
           </div>
@@ -111,14 +114,17 @@ export function BranchVariantStockDialog({
               <Table className="min-w-[46rem] text-sm">
                 <TableHeader>
                   <TableRow className="text-xs uppercase text-slate-500">
-                    <TableHead className="px-3 py-3">Image</TableHead>
-                    <TableHead className="px-3 py-3">Variant</TableHead>
-                    <TableHead className="px-3 py-3">SKU</TableHead>
-                    <TableHead className="px-3 py-3">Stock</TableHead>
-                    <TableHead className="px-3 py-3">Status</TableHead>
-                    <TableHead className="px-3 py-3 whitespace-nowrap">Discount %</TableHead>
-                    <TableHead className="px-3 py-3 whitespace-nowrap">Final (Incl. Tax)</TableHead>
-                    <TableHead className="px-3 py-3">Action</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Image</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Variant</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">SKU</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Stock</TableHead>
+                    <TableGroupHead colSpan={2}>Price</TableGroupHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Stock Status</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Action</TableHead>
+                  </TableRow>
+                  <TableRow className="text-xs uppercase text-slate-500">
+                    <TableSubHead>Discount %</TableSubHead>
+                    <TableSubHead>Final (Incl. Tax)</TableSubHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -150,17 +156,17 @@ export function BranchVariantStockDialog({
       <TableCell className="px-3 py-3 font-mono font-bold whitespace-nowrap text-slate-900">
         {stock.display}
       </TableCell>
-      <TableCell className="px-3 py-3">
-        <Badge variant={status.variant} className={status.className}>
-          {status.label}
-        </Badge>
-      </TableCell>
-
       <TableCell className="px-3 py-3 text-xs whitespace-nowrap">
         {pricing.discountPct}%
       </TableCell>
       <TableCell className="px-3 py-3 font-mono text-xs font-bold whitespace-nowrap text-slate-900">
         {formatMoney(pricing.final)}
+      </TableCell>
+
+      <TableCell className="px-3 py-3">
+        <Badge variant={status.variant} className={status.className}>
+          {status.label}
+        </Badge>
       </TableCell>
 
       <TableCell className="px-3 py-3">

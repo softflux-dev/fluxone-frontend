@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import { exportRowsToCsv } from '@/lib/export/csvExport'
+import { exportRowsToCsv, buildRangeExportFileName } from '@/lib/export/csvExport'
 import { formatAmount, normalizeCurrency } from '@/lib/currency'
 import { formatDateTimeInline } from '@/lib/formatDateTime'
 import { finalPriceFromSelling } from '@/lib/products/pricing'
@@ -47,7 +47,8 @@ function buildRows(items = []) {
 }
 
 // CSV export for Tax & Profit catalog table (TC-054)
-export function exportTaxProfitCsv({ items = [], currency = 'PKR' } = {}) {
+// CSV export for Tax & Profit catalog table (TC-054)
+export async function exportTaxProfitCsv({ items = [], currency = 'PKR', from, to } = {}) {
   const code = normalizeCurrency(currency)
   const rows = buildRows(items)
   if (!rows.length) throw new Error('No rows to export')
@@ -67,8 +68,14 @@ export function exportTaxProfitCsv({ items = [], currency = 'PKR' } = {}) {
     `Total Profit (${code})`,
   ]
 
-  exportRowsToCsv({
-    filename: `tax-profit-catalog-${code}.csv`,
+  await exportRowsToCsv({
+    filename: buildRangeExportFileName({
+      module: 'Tax & Profit',
+      type: `Catalog ${code}`,
+      from,
+      to,
+    }),
+    exactFileName: true,
     headers,
     rows: rows.map((r) => [
       r.sku,
@@ -88,7 +95,7 @@ export function exportTaxProfitCsv({ items = [], currency = 'PKR' } = {}) {
 }
 
 // PDF export for Tax & Profit catalog table (TC-054)
-export function exportTaxProfitPdf({ items = [], currency = 'PKR' } = {}) {
+export function exportTaxProfitPdf({ items = [], currency = 'PKR', from, to } = {}) {
   const code = normalizeCurrency(currency)
   const rows = buildRows(items)
   if (!rows.length) throw new Error('No rows to export')
@@ -178,5 +185,12 @@ export function exportTaxProfitPdf({ items = [], currency = 'PKR' } = {}) {
     y += Math.max(rowH, maxLines * 3.2 + 1.5)
   }
 
-  doc.save(`tax-profit-catalog-${code}.pdf`)
+    doc.save(
+    `${buildRangeExportFileName({
+      module: 'Tax & Profit',
+      type: `Catalog ${code}`,
+      from,
+      to,
+    })}.pdf`
+  )
 }

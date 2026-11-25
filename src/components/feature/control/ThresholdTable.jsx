@@ -4,6 +4,7 @@ import { ProductImageCell } from '@/components/feature/products/ProductStatusTog
 import { Button } from '@/components/ui/button'
 import { displayItemCode } from '@/lib/formatDisplayId'
 import { cn } from '@/lib/utils'
+import { ActionIconButton } from '@/components/shared/ActionIconButton'
 
 const STATUS_META = {
   in: { label: 'In stock', className: 'bg-emerald-50 text-emerald-700' },
@@ -74,16 +75,7 @@ export function ThresholdTable({
       loading={loading}
       columns={columns}
       renderRowActions={(row) => (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="cursor-pointer"
-          onClick={() => onEdit?.(row)}
-        >
-          <PencilIcon className="size-3.5" />
-          Edit
-        </Button>
+    <ActionIconButton action="edit" label="Edit" onClick={() => onEdit?.(row)} />
       )}
       emptyTitle="No threshold records"
       emptyHint="Products appear here once they exist in your catalog."

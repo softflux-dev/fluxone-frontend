@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronDown, ClipboardList, Settings2 } from 'lucide-react'
+import { ChevronDown, Settings2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { MotionHeader, MotionReveal } from '@/components/shared/MotionReveal'
 import { SurfaceCard } from '@/components/shared/SurfaceCard'
@@ -12,6 +12,8 @@ import {
   TableHeader,
   TableBody,
   TableHead,
+  TableGroupHead,
+  TableSubHead,
   TableRow,
   TableCell,
   TablePagination,
@@ -34,7 +36,9 @@ import {
 } from '@/components/feature/branch/inventory/ShelfStockCell'
 import { DemandRequestsPanel } from '@/components/feature/branch/demand-requests/DemandRequestsPanel'
 import { getPricingBreakdown, formatMoney } from '@/lib/products/pricingBreakdown'
+import { useCurrency } from '@/hooks/shared/useCurrency'
 import { PricingBreakdown } from '@/components/feature/branch/inventory/PricingBreakdown'
+import { ActionIconButton } from '@/components/shared/ActionIconButton'
 
 const INVENTORY_TABS = [
   { id: 'stock', label: 'Stock Overview' },
@@ -42,6 +46,7 @@ const INVENTORY_TABS = [
 ]
 
 export function BranchInventoryPage() {
+  const { currency } = useCurrency()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab') === 'demand' ? 'demand' : 'stock'
   const [activeTab, setActiveTab] = useState(tabFromUrl)
@@ -214,7 +219,11 @@ export function BranchInventoryPage() {
           </MotionReveal>
 
           <MotionReveal delay={0.04}>
-            <SurfaceCard title="Shelf Stock Levels" className="min-h-[400px]">
+            <SurfaceCard
+              title="Shelf Stock Levels"
+              description={`Currency: ${currency}`}
+              className="min-h-[400px]"
+            >
               {loading ? (
                 <TableRowsSkeleton rows={5} />
               ) : products.length === 0 ? (
@@ -318,16 +327,10 @@ export function BranchInventoryPage() {
                             </div>
                           ) : null}
                               {!variantParent ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={openDemandRequests}
-                                  className="mt-3 h-8 w-full text-xs sm:w-auto"
-                                >
-                                  <ClipboardList className="mr-1.5 size-3" />
-                                  Stock Request
-                                </Button>
-                              ) : null}
+                              <div className="mt-3">
+                                <ActionIconButton action="stockRequest" onClick={openDemandRequests} />
+                              </div>
+                            ) : null}
                             </div>
                           </div>
                         </article>
@@ -339,20 +342,21 @@ export function BranchInventoryPage() {
                     <Table className="w-full min-w-[44rem] table-fixed text-left text-sm">
                       <TableHeader>
                       <TableRow className="text-xs text-slate-500 uppercase">
-                        <TableHead className="w-14 px-2 py-3 whitespace-nowrap">Image</TableHead>
-                        <TableHead className="w-[8rem] px-2 py-3 whitespace-nowrap">Name</TableHead>
-                        <TableHead className="w-[7rem] px-2 py-3 whitespace-nowrap">Category</TableHead>
-                        <TableHead className="w-[10rem] px-2 py-3 whitespace-nowrap">In Stock</TableHead>
-                        <TableHead className="w-[5.5rem] px-2 py-3 whitespace-nowrap">Status</TableHead>
-                        <TableHead className="w-[5rem] px-2 py-3 whitespace-nowrap">Purchase</TableHead>
-                        <TableHead className="w-[4rem] px-2 py-3 whitespace-nowrap">Profit %</TableHead>
-                        <TableHead className="w-[5rem] px-2 py-3 whitespace-nowrap">Selling</TableHead>
-                        <TableHead className="w-[5rem] px-2 py-3 whitespace-nowrap">Discount %</TableHead>
-                        <TableHead className="w-[3.5rem] px-2 py-3 whitespace-nowrap">Tax %</TableHead>
-                        <TableHead className="w-[6rem] px-2 py-3">
-                          Final Price <span className="block normal-case">(Incl. Tax)</span>
-                        </TableHead>
-                        <TableHead className="w-[10.5rem] px-2 py-3 whitespace-nowrap">Actions</TableHead>
+                        <TableHead rowSpan={2} className="w-14 px-2 py-3 align-middle whitespace-nowrap">Image</TableHead>
+                        <TableHead rowSpan={2} className="w-[8rem] px-2 py-3 align-middle whitespace-nowrap">Name</TableHead>
+                        <TableHead rowSpan={2} className="w-[7rem] px-2 py-3 align-middle whitespace-nowrap">Category</TableHead>
+                        <TableHead rowSpan={2} className="w-[10rem] px-2 py-3 align-middle whitespace-nowrap">In Stock</TableHead>
+                        <TableHead rowSpan={2} className="w-[5.5rem] px-2 py-3 align-middle whitespace-nowrap">Status</TableHead>
+                        <TableGroupHead colSpan={6}>Price</TableGroupHead>
+                        <TableHead rowSpan={2} className="w-[10.5rem] px-2 py-3 align-middle whitespace-nowrap">Actions</TableHead>
+                      </TableRow>
+                      <TableRow className="text-xs text-slate-500 uppercase">
+                        <TableSubHead className="w-[5rem]">Purchase</TableSubHead>
+                        <TableSubHead className="w-[5rem]">Selling</TableSubHead>
+                        <TableSubHead className="w-[4rem]">Tax %</TableSubHead>
+                        <TableSubHead className="w-[5rem]">Discount %</TableSubHead>
+                        <TableSubHead className="w-[5rem]">Final</TableSubHead>
+                        <TableSubHead className="w-[4rem]">Profit %</TableSubHead>
                       </TableRow>
 
                         
@@ -422,50 +426,41 @@ export function BranchInventoryPage() {
 
                               <TableCell className="px-2 py-3 font-mono text-xs">
                                 {pricing ? formatMoney(pricing.purchase) : '—'}
-                                </TableCell>
-
-                              <TableCell className="px-2 py-3 text-xs">
-                                {pricing ? `${pricing.profitPct}%` : '—'}
-                                </TableCell>
-
+                              </TableCell>
                               <TableCell className="px-2 py-3 font-mono text-xs">
                                 {pricing ? formatMoney(pricing.selling) : '—'}
-                                </TableCell>
-                              <TableCell className="px-2 py-3 text-xs">
-                                {pricing ? `${pricing.discountPct}%` : '—'}
-                                </TableCell>
+                              </TableCell>
                               <TableCell className="px-2 py-3 text-xs">
                                 {pricing ? `${pricing.taxPct}%` : '—'}
-                                </TableCell>
+                              </TableCell>
+                              <TableCell className="px-2 py-3 text-xs">
+                                {pricing ? `${pricing.discountPct}%` : '—'}
+                              </TableCell>
                               <TableCell className="px-2 py-3 font-mono text-xs font-bold">
                                 {pricing ? formatMoney(pricing.final) : '—'}
-                                </TableCell>
+                              </TableCell>
+                              <TableCell className="px-2 py-3 text-xs">
+                                {pricing ? `${pricing.profitPct}%` : '—'}
+                              </TableCell>
 
                               <TableCell className="px-2 py-3">
                                 {variantParent ? (
                                   <span className="text-xs text-slate-400">Via variants</span>
                                 ) : (
-                                  <div className="flex items-center gap-1.5">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={openDemandRequests}
-                                      className="h-8 text-xs"
-                                    >
-                                      <ClipboardList className="mr-1.5 size-3" />
-                                      Stock Request
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      aria-label="Toggle pricing breakdown"
-                                      aria-expanded={expanded}
-                                      onClick={() => setExpandedId(expanded ? null : prod.id)}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <ChevronDown className={cn('size-4 transition-transform', expanded && 'rotate-180')} />
-                                    </Button>
-                                  </div>
+                                <div className="flex items-center gap-1.5">
+                                <ActionIconButton action="stockRequest" onClick={openDemandRequests} />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  title="Toggle pricing breakdown"
+                                  aria-label="Toggle pricing breakdown"
+                                  aria-expanded={expanded}
+                                  onClick={() => setExpandedId(expanded ? null : prod.id)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <ChevronDown className={cn('size-4 transition-transform', expanded && 'rotate-180')} />
+                                </Button>
+                              </div>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -482,7 +477,6 @@ export function BranchInventoryPage() {
                           )
                         })}
                       </TableBody>
-                          )
                     </Table>
                   </div>
                 </>

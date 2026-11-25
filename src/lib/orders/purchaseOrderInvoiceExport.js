@@ -259,14 +259,17 @@ export async function exportPurchaseOrderInvoiceItemsExcel(invoice) {
 
   const filename = `${safeFilename(invoice.invoiceNumber || 'invoice')}-items.xlsx`
   await exportRowsToStyledExcel({
-    filename,
-    headers: ITEM_HEADERS,
-    rows: rowsWithTotal,
-    sheetName: sheetNameForInvoice(invoice, 0),
-    freezeHeader: true,
-    enableFilter: false, // a filter/sort would move the Total row
-    boldLastRow: true,   // new option, added in Step 2
-  })
+  filename: buildRangeExportFileName({
+    module: 'Logs',
+    type: tabLabel,            // 'All Activity', 'Stock', 'Pricing'...
+    from: filters.dateFrom,    // apni state ke asli keys
+    to: filters.dateTo,
+  }),
+  exactFileName: true,
+  headers,
+  rows,
+  sheetName: tabLabel,
+})
   return { filename, count: rows.length }
 }
 

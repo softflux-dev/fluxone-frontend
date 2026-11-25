@@ -338,9 +338,12 @@ export function TaxProfitPage() {
       return
     }
 
-    if (kind === 'csv') exportTaxProfitCsv({ items, currency })
-    else exportTaxProfitPdf({ items, currency })
-    toastSuccess(kind === 'csv' ? 'CSV exported' : 'PDF exported')
+   if (kind === 'csv') {
+      await exportTaxProfitCsv({ items, currency, from: dateRange.from, to: dateRange.to })
+    } else {
+      exportTaxProfitPdf({ items, currency, from: dateRange.from, to: dateRange.to })
+    }
+toastSuccess(kind === 'csv' ? 'CSV exported' : 'PDF exported')
   } catch (err) {
     toastError(err?.message || 'Export failed')
   } finally {

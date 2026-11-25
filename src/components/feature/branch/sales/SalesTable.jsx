@@ -20,6 +20,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  TableGroupHead,
+  TableSubHead,
   TablePagination,
 } from '@/components/ui/table'
 import { TableRowsSkeleton } from '@/components/ui/skeleton'
@@ -70,37 +72,19 @@ function SaleItemsCell({ sale }) {
   )
 }
 
-function StatusPill({ sale, onRefund }) {
+function StatusPill({ sale }) {
   const status = saleActionStatus(sale)
   const Icon =
     status.key === 'refunded' ? RotateCcw : status.key === 'change' ? Banknote : Check
-  const canRefund = status.key !== 'refunded' && typeof onRefund === 'function'
-
   const className = cn(
-    'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
+    'inline-flex size-8 shrink-0 items-center justify-center rounded-full ring-1 ring-inset',
     status.className,
-    canRefund && 'cursor-pointer transition-opacity hover:opacity-90',
   )
-
-  if (canRefund) {
-    return (
-      <button
-        type="button"
-        className={className}
-        title="Request refund"
-        aria-label="Request refund"
-        onClick={() => onRefund(sale)}
-      >
-        <Icon className="size-3.5 shrink-0" strokeWidth={2} />
-        {status.label}
-      </button>
-    )
-  }
+  const tooltip = status.label ?? status.key
 
   return (
-    <span className={className}>
-      <Icon className="size-3.5 shrink-0" strokeWidth={2} />
-      {status.label}
+    <span className={className} title={tooltip} aria-label={tooltip}>
+      <Icon className="size-4 shrink-0" strokeWidth={2} />
     </span>
   )
 }
@@ -143,7 +127,7 @@ function ChangeCell({ sale, money }) {
   return <span className="text-slate-700">{money(changeAmount, sale.currency)}</span>
 }
 
-function SaleMobileCard({ sale, index, money, onRefund, onPrint }) {
+function SaleMobileCard({ sale, index, money, onPrint }) {
   const tax = sale.tax_amount ?? sale.taxAmount
   const discount = sale.discount_amount ?? sale.discountAmount
   const cur = sale.currency
@@ -163,7 +147,7 @@ function SaleMobileCard({ sale, index, money, onRefund, onPrint }) {
             <DateTimeLines value={sale.soldAt} />
           </div>
         </div>
-        <StatusPill sale={sale} onRefund={onRefund} />
+        <StatusPill sale={sale} />
       </div>
 
       <div className="mt-3">
@@ -218,16 +202,16 @@ export function SalesTable({
   pageSize = 8,
   onPageChange,
   onPageSizeChange,
-  onRefund,
   onPrint,
   filterFrom = '',
   filterTo = '',
   className,
 }) {
-  const { format, currency: tenantCurrency } = useCurrency()
+  const { formatPlain, currency: tenantCurrency } = useCurrency()
   const list = Array.isArray(items) ? items : []
   const isEmpty = !loading && list.length === 0
-  const money = (val, cur) => format(val, cur || tenantCurrency)
+  // Currency lives in the column header, cells are plain numbers
+  const money = (val) => formatPlain(val)
   const rangeLabel = formatFilterDateRange(filterFrom, filterTo)
   const rowOffset = Math.max(0, (page - 1) * pageSize)
 
@@ -251,7 +235,7 @@ export function SalesTable({
     <SurfaceCard
       className={cn('min-h-[400px]', className)}
       title={titleNode}
-      description="POS and register transactions history"
+      description={`Currency: ${tenantCurrency} · POS and register transactions history`}
       actions={rangeAction}
     >
       {loading ? (
@@ -270,24 +254,27 @@ export function SalesTable({
               sale={sale}
               index={rowOffset + i + 1}
               money={money}
-              onRefund={onRefund}
               onPrint={onPrint}
             />
           ))}
           desktop={
-            <Table className="table-fixed min-w-[72rem]">
+            <Table className="table-fixed min-w-[76rem]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[9rem]">Sale ID</TableHead>
-                  <TableHead className="w-[7.5rem]">Date &amp; Time</TableHead>
-                  <TableHead className="w-[12rem]">Sale Items</TableHead>
-                  <TableHead className="w-[6.5rem]">Tax</TableHead>
-                  <TableHead className="w-[6.5rem]">Discount</TableHead>
-                  <TableHead className="w-[6.5rem]">Final</TableHead>
-                  <TableHead className="w-[6.5rem]">Paid</TableHead>
-                  <TableHead className="w-[7rem]">Return</TableHead>
-                  <TableHead className="w-[6.5rem]">Change</TableHead>
-                  <TableHead className="w-[14rem]">Actions</TableHead>
+                  <TableHead rowSpan={2} className="w-[9rem] align-middle">Sale ID</TableHead>
+                  <TableHead rowSpan={2} className="w-[7.5rem] align-middle">Date &amp; Time</TableHead>
+                  <TableHead rowSpan={2} className="w-[12rem] align-middle">Sale Items</TableHead>
+                  <TableGroupHead colSpan={6}>Amount</TableGroupHead>
+                  <TableHead rowSpan={2} className="w-[8rem] align-middle">Status</TableHead>
+                  <TableHead rowSpan={2} className="w-[4rem] align-middle">Print</TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableSubHead className="w-[6.5rem]">Tax</TableSubHead>
+                  <TableSubHead className="w-[6.5rem]">Discount</TableSubHead>
+                  <TableSubHead className="w-[6.5rem]">Final</TableSubHead>
+                  <TableSubHead className="w-[6.5rem]">Paid</TableSubHead>
+                  <TableSubHead className="w-[7rem]">Return</TableSubHead>
+                  <TableSubHead className="w-[6.5rem]">Change</TableSubHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -342,10 +329,10 @@ export function SalesTable({
                         <ChangeCell sale={sale} money={money} />
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <StatusPill sale={sale} onRefund={onRefund} />
-                          <PrintButton sale={sale} onPrint={onPrint} />
-                        </div>
+                        <StatusPill sale={sale} />
+                      </TableCell>
+                      <TableCell>
+                        <PrintButton sale={sale} onPrint={onPrint} />
                       </TableCell>
                     </TableRow>
                   )
