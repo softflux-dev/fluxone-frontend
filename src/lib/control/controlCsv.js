@@ -1,14 +1,14 @@
 // Control movement CSV helpers — Export (tab-specific, not Products CSV).
-import { exportRowsToStyledExcel, buildExportFileName } from '@/lib/export/csvExport'
+import { exportRowsToStyledExcel, buildRangeExportFileName } from '@/lib/export/csvExport'
 
 export const CONTROL_CSV_HEADERS = [
   'S.N.',
-  'Date & Time',
   'SKU / Item ID',
   'Barcode',
   'Product Name',
   'Category',
   'Sub Category',
+  'Date & Time',
   'Item Type',
   'Variant Type',
   'Variant Value',
@@ -50,8 +50,7 @@ function formatDateTime(value) {
 }
 
 // Map API export rows → CSV download for active tab.
-export async function downloadControlExport(rows, movementType) {
-  const list = Array.isArray(rows) ? rows : []
+export async function downloadControlExport(rows, movementType, { from, to, tabLabel } = {}) {  const list = Array.isArray(rows) ? rows : []
   if (!list.length) throw new Error('No rows to export')
 
   const dataRows = list.map((row, index) => {
@@ -89,16 +88,15 @@ export async function downloadControlExport(rows, movementType) {
     const supplier = row.supplierName || row.supplier || '—';
     const productName = row.productName || row.name || '—';
 
-    return [
+      return [
       index + 1,                                        // 1. S.N.
-      formatDateTime(row.createdAt || row.dateTime),    // 2. Date & Time
-      row.itemCode || row.sku || '—',                   // 3. SKU / Item ID
-      row.barcode || '—',                               // 4. Barcode
-      productName,                                      // 5. Product Name
-      category,                                         // 6. Category
-      subCategory,                                      // 7. Sub Category
-      itemType,                                         // 8. Item Type
-      vType,                                            // 9. Variant Type
+      row.itemCode || row.sku || '—',                   // 2. SKU / Item ID
+      row.barcode || '—',                               // 3. Barcode
+      productName,                                      // 4. Product Name
+      category,                                         // 5. Category
+      subCategory,                                      // 6. Sub Category
+      formatDateTime(row.createdAt || row.dateTime),    // 7. Date & Time
+      itemType,                                         // 8. Item Type                                     // 9. Variant Type
       vValue,                                           // 10. Variant Value
       row.quantity ?? '',                               // 11. Stock In Qty
       formatPrice(row.oldPurchasePrice),                // 12. Old Purchasing Price
@@ -109,11 +107,16 @@ export async function downloadControlExport(rows, movementType) {
       notesSource.trim(),                               // 17. Notes / Source
     ]
   })
-
-   await exportRowsToStyledExcel({
-    filename: buildExportFileName(`inventory-control-${movementType || 'export'}`),
-    sheetName: 'Control',
+  await exportRowsToStyledExcel({
+    filename: buildRangeExportFileName({
+      module: 'Inventory Control',
+      type: tabLabel || 'Stock',
+      from,
+      to,
+    }),
+    exactFileName: true,
     headers: CONTROL_CSV_HEADERS,
     rows: dataRows,
+    sheetName: tabLabel || 'Stock',
   })
 }

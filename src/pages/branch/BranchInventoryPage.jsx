@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronDown, ClipboardList, Settings2 } from 'lucide-react'
+import { ChevronDown, Settings2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { MotionHeader, MotionReveal } from '@/components/shared/MotionReveal'
 import { SurfaceCard } from '@/components/shared/SurfaceCard'
@@ -35,6 +35,7 @@ import {
 import { DemandRequestsPanel } from '@/components/feature/branch/demand-requests/DemandRequestsPanel'
 import { getPricingBreakdown, formatMoney } from '@/lib/products/pricingBreakdown'
 import { PricingBreakdown } from '@/components/feature/branch/inventory/PricingBreakdown'
+import { ActionIconButton } from '@/components/shared/ActionIconButton'
 
 const INVENTORY_TABS = [
   { id: 'stock', label: 'Stock Overview' },
@@ -318,16 +319,10 @@ export function BranchInventoryPage() {
                             </div>
                           ) : null}
                               {!variantParent ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={openDemandRequests}
-                                  className="mt-3 h-8 w-full text-xs sm:w-auto"
-                                >
-                                  <ClipboardList className="mr-1.5 size-3" />
-                                  Stock Request
-                                </Button>
-                              ) : null}
+                              <div className="mt-3">
+                                <ActionIconButton action="stockRequest" onClick={openDemandRequests} />
+                              </div>
+                            ) : null}
                             </div>
                           </div>
                         </article>
@@ -445,27 +440,20 @@ export function BranchInventoryPage() {
                                 {variantParent ? (
                                   <span className="text-xs text-slate-400">Via variants</span>
                                 ) : (
-                                  <div className="flex items-center gap-1.5">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={openDemandRequests}
-                                      className="h-8 text-xs"
-                                    >
-                                      <ClipboardList className="mr-1.5 size-3" />
-                                      Stock Request
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      aria-label="Toggle pricing breakdown"
-                                      aria-expanded={expanded}
-                                      onClick={() => setExpandedId(expanded ? null : prod.id)}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <ChevronDown className={cn('size-4 transition-transform', expanded && 'rotate-180')} />
-                                    </Button>
-                                  </div>
+                                <div className="flex items-center gap-1.5">
+                                <ActionIconButton action="stockRequest" onClick={openDemandRequests} />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  title="Toggle pricing breakdown"
+                                  aria-label="Toggle pricing breakdown"
+                                  aria-expanded={expanded}
+                                  onClick={() => setExpandedId(expanded ? null : prod.id)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <ChevronDown className={cn('size-4 transition-transform', expanded && 'rotate-180')} />
+                                </Button>
+                              </div>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -482,7 +470,6 @@ export function BranchInventoryPage() {
                           )
                         })}
                       </TableBody>
-                          )
                     </Table>
                   </div>
                 </>

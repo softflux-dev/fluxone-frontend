@@ -84,7 +84,6 @@ export async function exportAdminLogsSelection({
 }) {
   if (!rows.length) throw new Error('No rows to export')
 
-  const tabSlug = adminLogTabFileSlug(filters.tab)
   const tabLabel =
     filters.tab === 'all'
       ? 'All Activity'
@@ -95,12 +94,10 @@ export async function exportAdminLogsSelection({
 
   await exportRowsToStyledExcel({
     filename,
-    sheetName: tabSlug.slice(0, 31) || 'Logs',
+    exactFileName: true,
     headers: EXPORT_HEADERS,
     rows: rows.map(mapLogExportRow),
-    freezeHeader: true,
-    enableFilter: true,
-    exactFileName: true,
+    sheetName: tabLabel,
   })
 
   return { filename, exported: rows.length }

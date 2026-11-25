@@ -1,5 +1,5 @@
 // Staff roster export — split schedule + hardware columns; FluxOne-styled Excel
-import { exportRowsToStyledExcel } from '@/lib/export/csvExport'
+import { exportRowsToStyledExcel, buildRangeExportFileName } from '@/lib/export/csvExport'
 import { displayStaffRef } from '@/lib/formatDisplayId'
 import { formatClockTime, formatDateTimeInline } from '@/lib/formatDateTime'
 import { formatWorkingDaysShort } from '@/lib/validation/branchForms'
@@ -92,17 +92,22 @@ function mapStaffExportRow(row = {}) {
     statusLabel(row.status),
   ]
 }
-
-export function exportStaffRosterCsv(rows = []) {
+export async function exportStaffRosterCsv(rows = [], { from, to } = {}) {
   if (!rows.length) {
     throw new Error('No staff to export')
   }
-  const stamp = new Date().toISOString().slice(0, 10)
-  exportRowsToStyledExcel({
-    filename: `fluxone-staff-roster-${stamp}.xls`,
-    sheetName: 'Staff Roster',
+  const today = new Date()
+  await exportRowsToStyledExcel({
+    filename: buildRangeExportFileName({
+      module: 'Staff',
+      type: 'Roster',
+      from: from || today,
+      to: to || today,
+    }),
+    exactFileName: true,
     headers: STAFF_EXPORT_HEADERS,
     rows: rows.map(mapStaffExportRow),
+    sheetName: 'Staff Roster',
   })
   return { exported: rows.length }
 }

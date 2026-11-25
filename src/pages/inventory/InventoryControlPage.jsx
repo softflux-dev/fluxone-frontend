@@ -215,7 +215,17 @@ export function InventoryControlPage() {
         toastInfo('No rows to export for this tab and filters')
         return
       }
-      downloadControlExport(rows, tab)
+       const tabLabel =
+        tab === MOVEMENT_TYPES.IN
+          ? 'Stock In'
+          : tab === MOVEMENT_TYPES.OUT
+            ? 'Stock Out'
+            : 'Adjustment'
+      await downloadControlExport(rows, tab, {
+        from: filters.from,
+        to: filters.to,
+        tabLabel,
+      })
       toastSuccess(`Exported ${rows.length} row(s)`)
     } catch (err) {
       toastError(err?.message || 'Export failed')

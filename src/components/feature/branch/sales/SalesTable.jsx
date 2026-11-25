@@ -75,9 +75,10 @@ function StatusPill({ sale, onRefund }) {
   const Icon =
     status.key === 'refunded' ? RotateCcw : status.key === 'change' ? Banknote : Check
   const canRefund = status.key !== 'refunded' && typeof onRefund === 'function'
+  const tooltip = canRefund ? `${status.label} · Request refund` : status.label
 
   const className = cn(
-    'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
+    'inline-flex size-8 shrink-0 items-center justify-center rounded-full ring-1 ring-inset',
     status.className,
     canRefund && 'cursor-pointer transition-opacity hover:opacity-90',
   )
@@ -87,20 +88,18 @@ function StatusPill({ sale, onRefund }) {
       <button
         type="button"
         className={className}
-        title="Request refund"
-        aria-label="Request refund"
+        title={tooltip}
+        aria-label={tooltip}
         onClick={() => onRefund(sale)}
       >
-        <Icon className="size-3.5 shrink-0" strokeWidth={2} />
-        {status.label}
+        <Icon className="size-4 shrink-0" strokeWidth={2} />
       </button>
     )
   }
 
   return (
-    <span className={className}>
-      <Icon className="size-3.5 shrink-0" strokeWidth={2} />
-      {status.label}
+    <span className={className} title={tooltip} aria-label={tooltip}>
+      <Icon className="size-4 shrink-0" strokeWidth={2} />
     </span>
   )
 }
@@ -287,7 +286,7 @@ export function SalesTable({
                   <TableHead className="w-[6.5rem]">Paid</TableHead>
                   <TableHead className="w-[7rem]">Return</TableHead>
                   <TableHead className="w-[6.5rem]">Change</TableHead>
-                  <TableHead className="w-[14rem]">Actions</TableHead>
+                  <TableHead className="w-[7rem]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

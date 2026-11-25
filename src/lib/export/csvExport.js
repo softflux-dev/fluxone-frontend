@@ -1,5 +1,5 @@
 
-// Excel/CSV formula injection se bachao: =, +, -, @ se shuru hone wala text
+//Protect from Excel/CSV formula injection : =, +, -, @ text start from
 function neutralizeFormula(text) {
   return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text
 }
@@ -54,6 +54,25 @@ export function buildExportFileName(moduleName, date = new Date()) {
   return `${slug}-${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}.xlsx`
 }
  
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+// '2026-11-15' / Date / ISO string -> '15 Nov 2026'
+export function formatExportDate(value) {
+  if (!value) return ''
+  // 'YYYY-MM-DD' ko manually parse karo, warna timezone se din aage-peeche ho sakta hai
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value))
+  if (m) return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+}
+
+// Logs_All Activity_15 Nov 2026_17 Nov 2026  (extension exportRowsToStyledExcel khud lagata hai)
+export function buildRangeExportFileName({ module, type, from, to }) {
+  return [module, type, formatExportDate(from), formatExportDate(to)]
+    .filter(Boolean)
+    .join('_')
+}
 // Kisi bhi module ka purana naam ho (Staff_Export_2026-11-06.xlsx, Logs_Stock_28Oct2026.xlsx),
 // usay module-DD-MM-YYYY.xlsx mein badal deta hai
 function normalizeExportFileName(rawName) {

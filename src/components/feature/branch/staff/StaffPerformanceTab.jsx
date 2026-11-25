@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowDownUp, Eye, Settings, Star } from 'lucide-react'
 import { SurfaceCard } from '@/components/shared/SurfaceCard'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { DataCard, ResponsiveDataShell } from '@/components/shared/ResponsiveDataShell'
-import { RowActionButtons } from '@/components/shared/ActionIconButton'
+import { ActionIconButton, RowActionButtons } from '@/components/shared/ActionIconButton'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { ScaleFormDialog } from '@/components/feature/branch/staff/ScaleFormDialog'
 import { ScoreEmployeeDialog } from '@/components/feature/branch/performance/ScoreEmployeeDialog'
@@ -66,6 +66,7 @@ export function StaffPerformanceTab({
   onScaleStateChange,
 }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [activeSubTab, setActiveSubTab] = useState('roster')
 
@@ -506,28 +507,19 @@ export function StaffPerformanceTab({
                             {renderLastScored(emp)}
                           </TableCell>
                           <TableCell className="px-2.5 py-2 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-[11px]"
-                                asChild
-                              >
-                                <Link to={detailHref(emp.staffId, searchQuery, filterDesignation)}>
-                                  View Details
-                                </Link>
-                              </Button>
-                              {isEmployeeActive(emp) ? (
-                                <Button
-                                  size="sm"
-                                  variant="brand"
-                                  className="h-7 px-2 text-[11px]"
-                                  onClick={() => openScoringModal(emp)}
-                                >
-                                  Score Employee
-                                </Button>
-                              ) : null}
-                            </div>
+                          <div className="flex items-center gap-1.5">
+                            <ActionIconButton
+                              action="view"
+                              label="View Details"
+                              onClick={() => navigate(detailHref(emp.staffId, searchQuery, filterDesignation))}
+                            />
+                            {isEmployeeActive(emp) ? (
+                            <ActionIconButton
+                              action="score"
+                              onClick={() => openScoringModal(emp)}
+                            />
+                          ) : null}
+                        </div>
                           </TableCell>
                         </TableRow>
                       ))}

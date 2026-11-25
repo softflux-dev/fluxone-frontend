@@ -1,10 +1,9 @@
 // Product catalog Excel export — friendly columns, parent/child colors (TC-IM-EXPORT-001)
-// No itemCode in file — Import Ref links variants/bundles; server generates item codes on import.
 import { exportRowsToStyledExcel } from '@/lib/export/csvExport'
 
 export const PRODUCT_EXCEL_HEADERS = [
   'Product Name',
-  'Import Ref',
+  'Item Code',
   'Barcode',
   'Row Type',
   'Product Type',
@@ -20,8 +19,8 @@ export const PRODUCT_EXCEL_HEADERS = [
   'Stock Threshold',
   'Daily Price Update',
   'Status',
-  'Parent Ref',
-  'Component Ref',
+  'Parent Item Code',
+  'Component Item Code',
   'Component Qty',
   'Description',
 ]
@@ -111,7 +110,7 @@ function enrichRows(rows = []) {
 function mapProductExportCells(row = {}) {
   return [
     row.name || '',
-    row.importRef || '',
+    row.itemCode || '',
     row.barcode || '',
     rowTypeLabel(row.rowKind),
     productTypeLabel(row.type),
@@ -127,14 +126,13 @@ function mapProductExportCells(row = {}) {
     blankNum(row.threshold ?? row.reorderPoint),
     yesNo(row.dailyPriceChange),
     statusLabel(row.status),
-    row.parentRef || row.parentItemCode || '',
-    row.componentRef || row.componentItemCode || '',
+    row.parentItemCode || '',
+    row.componentItemCode || '',
     blankNum(row.componentQty),
     row.description || '',
   ]
 }
-
-export function exportProductsToStyledExcel(apiRows = []) {
+export async function exportProductsToStyledExcel(apiRows = []) {
   const rows = enrichRows(apiRows)
   if (!rows.length) {
     throw new Error('No products to export')
@@ -149,14 +147,13 @@ export function exportProductsToStyledExcel(apiRows = []) {
     rowStyles.push({ background: rowBackground(row.rowKind, row.type) })
   }
 
-  exportRowsToStyledExcel({
-    filename: `fluxone-products-${stamp}.xls`,
-    sheetName: 'Products',
+  await exportRowsToStyledExcel({
+    filename: `fluxone_products_${stamp}`,
+    exactFileName: true,
     headers: PRODUCT_EXCEL_HEADERS,
     rows: cellRows,
     rowStyles,
-    freezeHeader: true,
-    enableFilter: true,
+    sheetName: 'Products',
   })
 
   return {
