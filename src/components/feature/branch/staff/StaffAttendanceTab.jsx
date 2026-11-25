@@ -21,6 +21,7 @@ import { formatDateLine } from '@/lib/formatDateTime'
 import { toastError, toastSuccess } from '@/lib/toast'
 import { useClientPagination } from '@/hooks/shared/useClientPagination'
 import { cn } from '@/lib/utils'
+import { ActionIconButton } from '@/components/shared/ActionIconButton'
 
 function todayIso() {
   return new Date().toISOString().split('T')[0]
@@ -580,20 +581,13 @@ export function StaffAttendanceTab({ designations = [], staff = [] }) {
                           onChange={(e) => handleNoteChange(m.id, e.target.value)}
                           className="h-9 text-xs"
                         />
-                        <Button
-                          size="sm"
-                          variant={local.isSaved ? 'outline' : 'default'}
-                          style={local.isSaved ? {} : { backgroundColor: BRAND.purple }}
-                          className={
-                            local.isSaved
-                              ? 'w-full border-slate-300 text-slate-700 hover:bg-slate-50'
-                              : 'w-full text-white'
-                          }
-                          onClick={() => handleSaveAttendance(m.id)}
-                          disabled={mutating}
-                        >
-                          {local.isSaved ? 'Update' : 'Save'}
-                        </Button>
+                       <div className="flex justify-end">
+                      <ActionIconButton
+                        action={local.isSaved ? 'update' : 'save'}
+                        onClick={() => handleSaveAttendance(m.id)}
+                        disabled={mutating}
+                      />
+                    </div>
                       </div>
                     </article>
                   )
@@ -648,22 +642,13 @@ export function StaffAttendanceTab({ designations = [], staff = [] }) {
                               className="h-8 max-w-[160px] py-0.5 text-xs"
                             />
                           </TableCell>
-                          <TableCell className="px-3 py-2.5">
-                            <Button
-                              size="sm"
-                              variant={local.isSaved ? 'outline' : 'default'}
-                              style={local.isSaved ? {} : { backgroundColor: BRAND.purple }}
-                              className={
-                                local.isSaved
-                                  ? 'border-slate-300 text-slate-700 hover:bg-slate-50'
-                                  : 'text-white'
-                              }
-                              onClick={() => handleSaveAttendance(m.id)}
-                              disabled={mutating}
-                            >
-                              {local.isSaved ? 'Update' : 'Save'}
-                            </Button>
-                          </TableCell>
+                      <TableCell className="px-3 py-2.5">
+                      <ActionIconButton
+                        action={local.isSaved ? 'update' : 'save'}
+                        onClick={() => handleSaveAttendance(m.id)}
+                        disabled={mutating}
+                      />
+                    </TableCell>
                         </TableRow>
                       )
                     })}
