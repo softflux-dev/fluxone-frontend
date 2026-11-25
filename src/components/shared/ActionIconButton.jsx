@@ -1,4 +1,4 @@
-import { Ban, Check, Eye, Pencil, ClipboardCheck ,PackagePlus, Plus, Trash2, Unlock, X } from 'lucide-react'
+import { Ban, Check, Eye, Pencil,SaveIcon, RefreshCw , ClipboardCheck ,PackagePlus, Plus, Trash2, Unlock, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -15,7 +15,8 @@ const ACTION_STYLES = {
   addChild: 'text-teal-700 hover:bg-teal-50 hover:text-teal-900 dark:text-teal-400 dark:hover:bg-muted dark:hover:text-teal-300 hover:scale-110 active:scale-95',
   stockRequest: 'text-amber-600 hover:bg-amber-50 hover:text-amber-800 dark:text-amber-400 dark:hover:bg-muted dark:hover:text-amber-300 hover:scale-110 active:scale-95',
   score: 'text-violet-600 hover:bg-violet-50 hover:text-violet-800 dark:text-violet-400 dark:hover:bg-muted dark:hover:text-violet-300 hover:scale-110 active:scale-95',
-
+  save: 'text-purple-600 hover:bg-purple-50 hover:text-purple-800 dark:text-purple-400 dark:hover:bg-muted dark:hover:text-purple-300 hover:scale-110 active:scale-95',
+update: 'text-blue-600 hover:bg-blue-50 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-muted dark:hover:text-blue-300 hover:scale-110 active:scale-95',
 }
 
 const ACTION_ICONS = {
@@ -29,6 +30,8 @@ const ACTION_ICONS = {
   addChild: Plus,
   stockRequest: PackagePlus,
   score: ClipboardCheck,
+  save: SaveIcon,
+ update: RefreshCw,
 }
 
 const ACTION_LABELS = {
@@ -42,6 +45,8 @@ const ACTION_LABELS = {
   addChild: 'Add',
   stockRequest: 'Stock Request',
   score: 'Score Employee',
+  save: 'Save',
+  update: 'Update',
 }
 
 export function ActionIconButton({
