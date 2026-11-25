@@ -80,6 +80,7 @@ function StatusPill({ sale }) {
     'inline-flex size-8 shrink-0 items-center justify-center rounded-full ring-1 ring-inset',
     status.className,
   )
+  const tooltip = status.label ?? status.key
 
   return (
     <span className={className} title={tooltip} aria-label={tooltip}>
