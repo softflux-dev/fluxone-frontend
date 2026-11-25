@@ -199,6 +199,7 @@ function handleReject(row) {
   onPageChange={setPage}
   onPageSizeChange={(limit) => updateFilters({ limit })}
   onView={handleView}
+  onEdit={handleEdit}
 />
       </MotionReveal>
 
@@ -218,13 +219,12 @@ function handleReject(row) {
         }}
           onPrint={handlePrint}
           actionsBusy={mutating}
-          onEdit={handleEdit}
           onApprove={handleApprove}
           onReject={handleReject}
-      />
+        />
 
-      <DemandRequestRejectDialog
-        open={rejectOpen}
+        <DemandRequestRejectDialog
+          open={rejectOpen}
         onOpenChange={(open) => {
           setRejectOpen(open)
           if (!open) setRejectTarget(null)

@@ -19,11 +19,15 @@ import { displayOrderRef } from '@/lib/formatDisplayId'
 import { OrderStatusBadge } from '@/components/feature/orders/OrderStatusBadge'
 import { cn } from '@/lib/utils'
 
-// Child: View only. Edit / Approve / Reject live inside the review dialog.
-function DemandRequestActions({ row, onView }) {
+// Child: View + Edit (Edit only for Pending orders).
+function DemandRequestActions({ row, onView, onEdit }) {
+  const isPending = String(row?.status || '').toLowerCase() === 'pending'
   return (
     <div className="inline-flex items-center gap-0.5">
       <ActionIconButton action="view" label="View" onClick={() => onView?.(row)} />
+      {isPending && onEdit ? (
+        <ActionIconButton action="edit" label="Edit" onClick={() => onEdit(row)} />
+      ) : null}
     </div>
   )
 }
@@ -36,6 +40,7 @@ export function DemandRequestsTable({
   onPageChange,
   onPageSizeChange,
   onView,
+  onEdit,
   className,
 }) {
   const list = Array.isArray(items) ? items : []
@@ -88,7 +93,7 @@ export function DemandRequestsTable({
                   {row.companiesNumber ?? 0} companies · {row.itemsNumber ?? 0} items
                 </p>
                 <div className="mt-3">
-                 <DemandRequestActions row={row} onView={onView} />
+                 <DemandRequestActions row={row} onView={onView} onEdit={onEdit} />
                 </div>
               </article>
             ))}
@@ -135,7 +140,7 @@ export function DemandRequestsTable({
                       <OrderStatusBadge status={row.status} />
                     </TableCell>
                     <TableActionsCell className="px-2 py-3">
-                      <DemandRequestActions row={row} onView={onView} />
+                      <DemandRequestActions row={row} onView={onView} onEdit={onEdit} />
                     </TableActionsCell>
                   </TableRow>
                 ))}
