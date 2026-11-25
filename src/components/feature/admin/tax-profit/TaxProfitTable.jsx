@@ -10,6 +10,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  TableGroupHead,
+  TableSubHead,
   TablePagination,
 } from '@/components/ui/table'
 import { BRAND, UI_RADIUS } from '@/lib/constants'
@@ -31,6 +33,16 @@ import {
 import { BadgePercent, PackageOpen, Receipt } from 'lucide-react'
 import { TableRowsSkeleton } from '@/components/ui/skeleton'
 
+function priceGroupSpan(v) {
+  return (
+    (v.baseCost ? 1 : 0) +
+    (v.sellingPrice ? 1 : 0) +
+    (v.tax ? 2 : 0) +
+    (v.finalPrice ? 2 : 0) + // Discount % + Final
+    (v.profit ? 2 : 0)
+  )
+}
+
 function resolveRowPricing(p) {
   const sellingPrice = Number(p.sellingPrice ?? 0)
   const discountPercent = Number(p.discountPercent ?? 0)
@@ -43,8 +55,9 @@ function resolveRowPricing(p) {
   const marginPercent =
     p.marginPercent ?? actualMarginPercent(baseCost, sellingPrice)
   const profitAmount = p.profitAmount ?? Math.round((finalPrice - baseCost) * 100) / 100
+  const discountPct = discountPercent
   const profitPercent = p.profitPercent ?? (baseCost > 0 ? Math.round((profitAmount / baseCost) * 10000) / 100 : 0)
-  return { sellingPrice, finalPrice, marginAmount, marginPercent, baseCost, profitAmount, profitPercent }
+  return { discountPct, sellingPrice, finalPrice, marginAmount, marginPercent, baseCost, profitAmount, profitPercent }
 }
 
 export function TaxProfitTable({
@@ -259,7 +272,7 @@ export function TaxProfitTable({
             <Table className="min-w-[56rem] text-left text-sm">
               <TableHeader>
                 <TableRow className="text-xs text-slate-500 uppercase">
-                  <TableHead className="w-10 px-3 py-3 text-center">
+                  <TableHead rowSpan={2} className="w-10 px-3 py-3 text-center align-middle">
                     <input
                       type="checkbox"
                       checked={allVisibleSelected}
@@ -271,68 +284,74 @@ export function TaxProfitTable({
                     />
                   </TableHead>
                   {visibleColumns.id && (
-                    <TableHead className="px-3 py-3 font-medium">SKU ID</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">SKU ID</TableHead>
                   )}
                   {visibleColumns.image && (
-                    <TableHead className="px-3 py-3 font-medium">Image</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">Image</TableHead>
                   )}
                   {visibleColumns.name && (
-                    <TableHead className="px-3 py-3 font-medium">Product</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">Product</TableHead>
                   )}
                   {visibleColumns.barcode && (
-                    <TableHead className="hidden px-3 py-3 font-medium lg:table-cell">
+                    <TableHead rowSpan={2} className="hidden px-3 py-3 align-middle font-medium lg:table-cell">
                       Barcode
                     </TableHead>
                   )}
                   {visibleColumns.category && (
-                    <TableHead className="px-3 py-3 font-medium">Category</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">Category</TableHead>
                   )}
-                  {visibleColumns.baseCost && (
-                    <TableHead className="px-3 py-3 font-medium" title={PURCHASE_COST_FORMULA}>
-                      Purchase Price
-                    </TableHead>
-                  )}
-                  {visibleColumns.sellingPrice && (
-                    <TableHead className="px-3 py-3 font-medium" title={SELLING_PRICE_FORMULA}>
-                      Selling Price
-                    </TableHead>
-                  )}
-                  {visibleColumns.tax && (
-                    <TableHead className="px-3 py-3 font-medium" title={TAX_PCT_FORMULA}>
-                      Tax % · Tax Amount
-                    </TableHead>
-                  )}
-                  {visibleColumns.finalPrice && (
-                    <TableHead className="px-3 py-3 font-medium" title={FINAL_PRICE_FORMULA}>
-                      Final Price (incl. Tax)
-                    </TableHead>
-                  )}
-                  {visibleColumns.profit && (
-                    <TableHead className="px-3 py-3 font-medium" title={MARGIN_FORMULA}>
-                      Profit % · Profit Amount
-                    </TableHead>
+                  {priceGroupSpan(visibleColumns) > 0 && (
+                    <TableGroupHead colSpan={priceGroupSpan(visibleColumns)}>
+                      Price
+                    </TableGroupHead>
                   )}
                   {visibleColumns.unitsSold && (
-                    <TableHead className="px-3 py-3 font-medium" title={undefined}>
-                      Total Units Sold
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">
+                      Units Sold
                     </TableHead>
                   )}
                   {visibleColumns.totalRevenue && (
-                    <TableHead className="px-3 py-3 font-medium" title={undefined}>
-                      Total Revenue
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">
+                      Revenue
                     </TableHead>
                   )}
                   {visibleColumns.totalProfit && (
-                    <TableHead className="px-3 py-3 font-medium" title={undefined}>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle font-medium">
                       Total Profit
                     </TableHead>
+                  )}
+                </TableRow>
+                <TableRow className="text-xs text-slate-500 uppercase">
+                  {visibleColumns.baseCost && (
+                    <TableSubHead title={PURCHASE_COST_FORMULA}>Purchase</TableSubHead>
+                  )}
+                  {visibleColumns.sellingPrice && (
+                    <TableSubHead title={SELLING_PRICE_FORMULA}>Selling</TableSubHead>
+                  )}
+                  {visibleColumns.tax && (
+                    <>
+                      <TableSubHead title={TAX_PCT_FORMULA}>Tax %</TableSubHead>
+                      <TableSubHead title={TAX_PCT_FORMULA}>Tax</TableSubHead>
+                    </>
+                  )}
+                  {visibleColumns.finalPrice && (
+                    <>
+                      <TableSubHead>Discount %</TableSubHead>
+                      <TableSubHead title={FINAL_PRICE_FORMULA}>Final</TableSubHead>
+                    </>
+                  )}
+                  {visibleColumns.profit && (
+                    <>
+                      <TableSubHead title={PROFIT_PCT_FORMULA}>Profit %</TableSubHead>
+                      <TableSubHead title={MARGIN_FORMULA}>Profit</TableSubHead>
+                    </>
                   )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {products.map((p) => {
                   const isChecked = !!isRowSelected?.(p.id)
-                  const { sellingPrice, finalPrice, profitAmount, profitPercent, baseCost } =
+                  const { discountPct, sellingPrice, finalPrice, profitAmount, profitPercent, baseCost } =
                     resolveRowPricing(p)
 
                   return (
@@ -405,23 +424,36 @@ export function TaxProfitTable({
                       )}
 
                       {visibleColumns.tax && (
-                        <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
-                          <span>{formatPlain(p.taxAmount ?? 0)}</span>
-                          <span className="mt-0.5 block text-[10px] font-normal text-slate-400">{`${p.taxPct ?? 0}%`}</span>
-                        </TableCell>
+                        <>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {`${p.taxPct ?? 0}%`}
+                          </TableCell>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {formatPlain(p.taxAmount ?? 0)}
+                          </TableCell>
+                        </>
                       )}
 
                       {visibleColumns.finalPrice && (
-                        <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
-                          <span className="font-extrabold text-sm text-purple-950">{formatPlain(finalPrice)}</span>
-                        </TableCell>
+                        <>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {`${discountPct}%`}
+                          </TableCell>
+                          <TableCell className="px-3 py-3 text-sm font-extrabold text-purple-950">
+                            {formatPlain(finalPrice)}
+                          </TableCell>
+                        </>
                       )}
 
                       {visibleColumns.profit && (
-                        <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
-                          <span>{formatPlain(profitAmount)}</span>
-                          <span className="mt-0.5 block text-[10px] font-normal text-slate-400">{`${profitPercent}%`}</span>
-                        </TableCell>
+                        <>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {`${profitPercent}%`}
+                          </TableCell>
+                          <TableCell className="px-3 py-3 text-xs font-semibold text-slate-800">
+                            {formatPlain(profitAmount)}
+                          </TableCell>
+                        </>
                       )}
 
                       {visibleColumns.unitsSold && (

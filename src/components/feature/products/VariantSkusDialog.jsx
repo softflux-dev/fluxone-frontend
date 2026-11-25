@@ -15,6 +15,8 @@ import {
   TableBody,
   TableCell,
   TableHead,
+  TableGroupHead,
+  TableSubHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
@@ -61,7 +63,7 @@ export function VariantSkusDialog({
   product = null,
   fetchProductDetail,
 }) {
-  const { formatPlain } = useCurrency()
+  const { formatPlain, currency } = useCurrency()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [detail, setDetail] = useState(null)
@@ -110,7 +112,7 @@ export function VariantSkusDialog({
                 {titleName}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Variants — stock and pricing per SKU
+                Currency: {currency} · Variants — stock and pricing per SKU
               </DialogDescription>
             </div>
           </div>
@@ -132,16 +134,19 @@ export function VariantSkusDialog({
               <Table className="min-w-[900px] text-sm">
                 <TableHeader>
                   <TableRow className="text-xs">
-                    <TableHead className="px-3 py-3">Image</TableHead>
-                    <TableHead className="px-3 py-3">Variant</TableHead>
-                    <TableHead className="px-3 py-3">SKU</TableHead>
-                    <TableHead className="px-3 py-3">Barcode</TableHead>
-                    <TableHead className="px-3 py-3">Purchase</TableHead>
-                    <TableHead className="px-3 py-3">Selling</TableHead>
-                    <TableHead className="px-3 py-3">Discount / Offer</TableHead>
-                    <TableHead className="px-3 py-3">Final price</TableHead>
-                    <TableHead className="px-3 py-3">Stock</TableHead>
-                    <TableHead className="px-3 py-3">Status</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Image</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Variant</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">SKU</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Barcode</TableHead>
+                    <TableGroupHead colSpan={4}>Price</TableGroupHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Stock</TableHead>
+                    <TableHead rowSpan={2} className="px-3 py-3 align-middle">Stock Status</TableHead>
+                  </TableRow>
+                  <TableRow className="text-xs">
+                    <TableSubHead>Purchase</TableSubHead>
+                    <TableSubHead>Selling</TableSubHead>
+                    <TableSubHead>Discount / Offer</TableSubHead>
+                    <TableSubHead>Final</TableSubHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
