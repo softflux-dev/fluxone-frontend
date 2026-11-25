@@ -131,7 +131,7 @@ export function SupplierTable({
                             : 'bg-emerald-50 text-emerald-700'
                         }`}
                       >
-                        {row.isActive === false ? 'Blocked' : 'Active'}
+                        {row.isActive === false ? 'Inactive' : 'Active'}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-600">{row.companyPhone || '—'}</p>
@@ -234,7 +234,7 @@ export function SupplierTable({
                             : 'bg-emerald-50 text-emerald-700'
                         }`}
                       >
-                        {row.isActive === false ? 'Blocked' : 'Active'}
+                        {row.isActive === false ? 'Inactive' : 'Active'}
                       </span>
                     </TableCell>
                     <TableActionsCell sticky>
