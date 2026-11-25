@@ -36,6 +36,7 @@ import { TableRowsSkeleton } from '@/components/ui/skeleton'
 import { EMPTY_DASH, formatInventoryStock, PRODUCT_TYPES } from '@/lib/products/mapProduct'
 import { displayItemCode } from '@/lib/formatDisplayId'
 import { BRAND } from '@/lib/constants'
+import { useCurrency } from '@/hooks/shared/useCurrency'
 import {
   FINAL_PRICE_FORMULA,
   SELLING_PRICE_FORMULA,
@@ -164,6 +165,7 @@ export function ProductTable({
   onViewVariants,
   className,
 }) {
+  const { currency } = useCurrency()
   const list = Array.isArray(items) ? items : []
   const isEmpty = !loading && list.length === 0
   const page = pagination?.page || 1
@@ -217,7 +219,7 @@ export function ProductTable({
     <SurfaceCard
       className={className}
       title="Product catalog"
-      description="Single items & bundles for this company"
+      description={`Currency: ${currency} · Single items & bundles for this company`}
       actions={catalogActions}
     >
       {loading ? (
@@ -368,7 +370,7 @@ onChange={() => onToggleRow?.(row.id)}
                     <TableHead rowSpan={2} className="px-2 py-2 align-middle font-semibold whitespace-nowrap">
                       Barcode
                     </TableHead>
-                    <TableGroupHead colSpan={4}>Prices (Rs)</TableGroupHead>
+                    <TableGroupHead colSpan={6}>Price</TableGroupHead>
                     <TableHead
                       rowSpan={2}
                       className="px-2 py-2 align-middle font-semibold leading-tight whitespace-normal"
@@ -406,7 +408,9 @@ onChange={() => onToggleRow?.(row.id)}
                     <TableSubHead>Purchase</TableSubHead>
                     <TableSubHead title={SELLING_PRICE_FORMULA}>Selling</TableSubHead>
                     <TableSubHead title={TAX_PCT_FORMULA}>Tax %</TableSubHead>
-                    <TableSubHead title={FINAL_PRICE_FORMULA}>Final (incl. tax)</TableSubHead>
+                    <TableSubHead>Discount %</TableSubHead>
+                    <TableSubHead title={FINAL_PRICE_FORMULA}>Final</TableSubHead>
+                    <TableSubHead>Profit %</TableSubHead>
                     <TableSubHead>Price</TableSubHead>
                     <TableSubHead>Vendor</TableSubHead>
                     <TableSubHead>Price</TableSubHead>
@@ -462,11 +466,17 @@ onChange={() => onToggleRow?.(row.id)}
                           {Number(row.taxPercent || 0)}%
                         </span>
                       </TableCell>
+                      <TableCell className="px-2 py-3 text-xs tabular-nums text-slate-800 whitespace-nowrap">
+                        {row.type === PRODUCT_TYPES.VARIANT ? EMPTY_DASH : `${Number(row.discountPercent || 0)}%`}
+                      </TableCell>
                       <TableCell
                         className="px-2 py-3 text-xs font-bold tabular-nums text-slate-900 whitespace-nowrap"
                         title={FINAL_PRICE_FORMULA}
                       >
                         {priceOrDash(row, row.finalPrice)}
+                      </TableCell>
+                      <TableCell className="px-2 py-3 text-xs tabular-nums text-slate-800 whitespace-nowrap">
+                        {row.type === PRODUCT_TYPES.VARIANT ? EMPTY_DASH : `${Number(row.profitPercent || 0)}%`}
                       </TableCell>
                       <TableCell className="px-2 py-3">
                         <PromotionColumns row={row} />

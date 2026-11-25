@@ -485,7 +485,7 @@ export function StaffPerformanceTab({
                             {renderStatusBadge(emp)}
                           </TableCell>
                           <TableCell className="px-2.5 py-2 text-xs font-semibold whitespace-nowrap text-slate-800">
-                            {emp.score == null ? '—' : `${Number(emp.score).toFixed(0)} / ${pointsUsed}`}
+                            {emp.score == null ? '—' : `${Number(emp.score).toFixed(0)} / 100cl`}
                           </TableCell>
                           <TableCell className="px-2.5 py-2 whitespace-nowrap">
                             {renderTrend(emp)}
