@@ -1123,7 +1123,8 @@ export function BundleFormPage({ mode = 'create', initialBundle = null, loadingD
                   <TableHead>Variant Type</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Qty in bundle</TableHead>
-                  <TableHead>Item price</TableHead>
+                  <TableHead>Unit price</TableHead>
+                  <TableHead>Line price</TableHead>
                   {!isEdit ? <TableHead /> : null}
                 </TableRow>
               </TableHeader>
@@ -1184,6 +1185,9 @@ export function BundleFormPage({ mode = 'create', initialBundle = null, loadingD
                       )}
                     </TableCell>
                     <TableCell>{money(row.price)}</TableCell>
+                    <TableCell className="font-semibold text-slate-900">
+                      {money(row.lineTotal)}
+                    </TableCell>
                     {!isEdit ? (
                       <TableCell>
                         <Button
