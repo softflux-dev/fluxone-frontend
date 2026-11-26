@@ -167,6 +167,10 @@ export const endpoints = {
     others: '/inventory/control/others',
     otherItem: (id) => `/inventory/control/others/${id}`,
   },
+  pricingApprovals: {
+    list: '/inventory/pricing-approvals',
+    resolve: '/inventory/pricing-approvals/resolve',
+  },
   lookups: {
     employees: '/inventory/lookups/employees',
     branches: '/inventory/lookups/branches',
