@@ -116,6 +116,7 @@ export function validateStaffSchedule(fields, branchHours = null) {
 export const STAFF_FIELD_ORDER = [
   'fullName',
   'email',
+  'contactEmail',
   'password',
   'role',
   'workingDays',
@@ -168,6 +169,13 @@ if (!loginId) {
 
 
   if (!fields.role) errors.role = 'System role is required'
+
+  // Cashier logs in with the ID above; credentials are mailed to this address
+  if (isCashier) {
+    const contact = String(fields.contactEmail || '').trim()
+    if (!contact && !isEdit) errors.contactEmail = 'Cashier email is required to send login credentials'
+    else if (contact && !/^[^s@]+@[^s@]+.[^s@]+$/.test(contact)) errors.contactEmail = 'Please enter a valid email address'
+  }
 
   // Inventory Manager gets a server-generated password by email
   const autoPassword = !isEdit && fields.role === 'inventory_manager'

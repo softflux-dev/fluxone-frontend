@@ -118,11 +118,14 @@ export function StaffPage() {
         : await createStaff(fields)
     if (result.success) {
       if (formMode === 'edit') {
-        toastSuccess('Staff updated')
+        if (result.data?.credentialsEmailed === true) toastSuccess('Staff updated — new password emailed to the cashier')
+        else if (result.data?.credentialsEmailed === false)
+          toastInfo('Password updated, but it could not be emailed. Add or fix the cashier email and save again.')
+        else toastSuccess('Staff updated')
       } else if (result.data?.credentialsEmailed === true) {
         toastSuccess('Staff created — login credentials emailed')
       } else if (result.data?.credentialsEmailed === false) {
-        toastInfo('Staff created, but the credentials email could not be sent. Set a password from Edit.')
+        toastInfo('Staff created, but the credentials email could not be sent. Check the email address and set the password again from Edit.')
       } else {
         toastSuccess('Staff created')
       }
