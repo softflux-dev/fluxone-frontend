@@ -18,6 +18,9 @@ export function StaffHardwareAssignFields({
   hardwareOptions = [],
   hardwareLoading = false,
   scheduleReady = false,
+  workingDays = null,
+  scheduleStart = '',
+  scheduleEnd = '',
   hardwareSearch = '',
   selectedSlotKey = '',
   fieldErrors = {},
@@ -63,6 +66,9 @@ export function StaffHardwareAssignFields({
             devices={hardwareOptions}
             loading={hardwareLoading}
             scheduleReady={scheduleReady}
+            workingDays={workingDays}
+            scheduleStart={scheduleStart}
+            scheduleEnd={scheduleEnd}
             search={hardwareSearch}
             hardwareType={hardwareType}
             selectedDeviceId={hardwareDeviceId}
