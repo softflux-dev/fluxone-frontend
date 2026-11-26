@@ -1,6 +1,6 @@
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronDown, Settings2 } from 'lucide-react'
+import { Settings2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { MotionHeader, MotionReveal } from '@/components/shared/MotionReveal'
 import { SurfaceCard } from '@/components/shared/SurfaceCard'
@@ -37,13 +37,25 @@ import {
 import { DemandRequestsPanel } from '@/components/feature/branch/demand-requests/DemandRequestsPanel'
 import { getPricingBreakdown, formatMoney } from '@/lib/products/pricingBreakdown'
 import { useCurrency } from '@/hooks/shared/useCurrency'
-import { PricingBreakdown } from '@/components/feature/branch/inventory/PricingBreakdown'
-import { ActionIconButton } from '@/components/shared/ActionIconButton'
 
 const INVENTORY_TABS = [
   { id: 'stock', label: 'Stock Overview' },
   { id: 'demand', label: 'Demand Requests' },
 ]
+
+// Status badge with exactly three labels: In Stock / Low Stock / Out of Stock.
+// Colors still come from getShelfStockStatus; only the wording is normalized.
+function stockStatusFor(prod) {
+  const base = getShelfStockStatus(prod.quantity, prod.reorderPoint)
+  const qty = Number(prod.quantity) || 0
+  const raw = String(base?.label || '').toLowerCase()
+
+  let label = 'In Stock'
+  if (qty <= 0 || raw.includes('out')) label = 'Out of Stock'
+  else if (raw.includes('low') || raw.includes('limit')) label = 'Low Stock'
+
+  return { ...base, label }
+}
 
 export function BranchInventoryPage() {
   const { currency } = useCurrency()
@@ -73,7 +85,6 @@ export function BranchInventoryPage() {
 
   const [priceRuleOpen, setPriceRuleOpen] = useState(false)
   const [variantsTarget, setVariantsTarget] = useState(null)
-  const [expandedId, setExpandedId] = useState(null)
 
   useEffect(() => {
     const params = { limit: 100, status: 'active' }
@@ -114,7 +125,7 @@ export function BranchInventoryPage() {
     setSearchParams(next, { replace: true })
   }
 
-  // Stock Request = view IM→BM order demands (not BM sending requests to IM)
+  // Used by the variant stock dialog to jump to Demand Requests
   function openDemandRequests() {
     setVariantsTarget(null)
     selectTab('demand')
@@ -157,12 +168,11 @@ export function BranchInventoryPage() {
           description={
             activeTab === 'demand'
               ? 'Review Inventory Manager order requests — edit, approve, or reject.'
-              : 'Monitor shelf stock. Stock Request opens Demand Requests sent by the Inventory Manager.'
+              : 'Monitor shelf stock levels and pricing.'
           }
           actions={
             activeTab === 'stock' ? (
               <div className="flex flex-wrap items-center gap-2">
-
                 <Button type="button" variant="outline" onClick={() => setPriceRuleOpen(true)}>
                   <Settings2 className="size-4" />
                   Stock Control Price
@@ -233,15 +243,12 @@ export function BranchInventoryPage() {
                   <div className="space-y-3 md:hidden">
                     {pagedProducts.map((prod) => {
                       const variantParent = isVariantParent(prod)
-                      const status = variantParent
-                        ? null
-                        : getShelfStockStatus(prod.quantity, prod.reorderPoint)
+                      const status = variantParent ? null : stockStatusFor(prod)
                       const cat = categories.find((c) => c.id === prod.categoryId)?.name || '—'
                       const subcat =
                         subcategories.find((s) => s.id === prod.subcategoryId)?.name || '—'
 
-                        const pricing = variantParent ? null : getPricingBreakdown(prod)
-                        const expanded = expandedId === prod.id
+                      const pricing = variantParent ? null : getPricingBreakdown(prod)
 
                       return (
                         <article
@@ -304,33 +311,17 @@ export function BranchInventoryPage() {
                                 />
                               </div>
 
-                            {pricing ? (
-                            <div className="mt-2">
-                              <div className="flex items-center justify-between gap-2 text-xs">
-                                <span className="text-slate-500">
-                                  Final: <b className="font-mono text-slate-900">{formatMoney(pricing.final)}</b>
-                                  <span className="ml-1 text-slate-400">· Disc {pricing.discountPct}%</span>
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => setExpandedId(expanded ? null : prod.id)}
-                                  className="cursor-pointer font-semibold text-violet-700"
-                                >
-                                  {expanded ? 'Hide' : 'Show'} breakdown
-                                </button>
-                              </div>
-                              {expanded ? (
-                                <div className="mt-2">
-                                  <PricingBreakdown pricing={pricing} />
-                                </div>
+                              {pricing ? (
+                                <p className="mt-2 text-xs text-slate-500">
+                                  Final:{' '}
+                                  <b className="font-mono text-slate-900">
+                                    {formatMoney(pricing.final)}
+                                  </b>
+                                  <span className="ml-1 text-slate-400">
+                                    · Disc {pricing.discountPct}%
+                                  </span>
+                                </p>
                               ) : null}
-                            </div>
-                          ) : null}
-                              {!variantParent ? (
-                              <div className="mt-3">
-                                <ActionIconButton action="stockRequest" onClick={openDemandRequests} />
-                              </div>
-                            ) : null}
                             </div>
                           </div>
                         </article>
@@ -339,44 +330,37 @@ export function BranchInventoryPage() {
                   </div>
 
                   <div className="hidden overflow-x-auto md:block">
-                    <Table className="w-full min-w-[44rem] table-fixed text-left text-sm">
+                    <Table className="w-full min-w-[62rem] table-fixed text-left text-sm">
                       <TableHeader>
-                      <TableRow className="text-xs text-slate-500 uppercase">
-                        <TableHead rowSpan={2} className="w-14 px-2 py-3 align-middle whitespace-nowrap">Image</TableHead>
-                        <TableHead rowSpan={2} className="w-[8rem] px-2 py-3 align-middle whitespace-nowrap">Name</TableHead>
-                        <TableHead rowSpan={2} className="w-[7rem] px-2 py-3 align-middle whitespace-nowrap">Category</TableHead>
-                        <TableHead rowSpan={2} className="w-[10rem] px-2 py-3 align-middle whitespace-nowrap">In Stock</TableHead>
-                        <TableHead rowSpan={2} className="w-[5.5rem] px-2 py-3 align-middle whitespace-nowrap">Status</TableHead>
-                        <TableGroupHead colSpan={6}>Price</TableGroupHead>
-                        <TableHead rowSpan={2} className="w-[10.5rem] px-2 py-3 align-middle whitespace-nowrap">Actions</TableHead>
-                      </TableRow>
-                      <TableRow className="text-xs text-slate-500 uppercase">
-                        <TableSubHead className="w-[5rem]">Purchase</TableSubHead>
-                        <TableSubHead className="w-[5rem]">Selling</TableSubHead>
-                        <TableSubHead className="w-[4rem]">Tax %</TableSubHead>
-                        <TableSubHead className="w-[5rem]">Discount %</TableSubHead>
-                        <TableSubHead className="w-[5rem]">Final</TableSubHead>
-                        <TableSubHead className="w-[4rem]">Profit %</TableSubHead>
-                      </TableRow>
-
-                        
+                        <TableRow className="text-xs text-slate-500 uppercase">
+                          <TableHead rowSpan={2} className="w-14 px-2 py-3 align-middle whitespace-nowrap">Image</TableHead>
+                          <TableHead rowSpan={2} className="w-[8rem] px-2 py-3 align-middle whitespace-nowrap">Name</TableHead>
+                          <TableHead rowSpan={2} className="w-[7rem] px-2 py-3 align-middle whitespace-nowrap">Category</TableHead>
+                          <TableHead rowSpan={2} className="w-[10rem] px-2 py-3 align-middle whitespace-nowrap">In Stock</TableHead>
+                          <TableHead rowSpan={2} className="w-[6.5rem] px-2 py-3 align-middle whitespace-nowrap">Status</TableHead>
+                          <TableGroupHead colSpan={6}>Price</TableGroupHead>
+                        </TableRow>
+                        <TableRow className="text-xs text-slate-500 uppercase">
+                          <TableSubHead className="w-[5rem]">Purchase</TableSubHead>
+                          <TableSubHead className="w-[5rem]">Selling</TableSubHead>
+                          <TableSubHead className="w-[4rem]">Tax %</TableSubHead>
+                          <TableSubHead className="w-[5rem]">Discount %</TableSubHead>
+                          <TableSubHead className="w-[5rem]">Final</TableSubHead>
+                          <TableSubHead className="w-[4rem]">Profit %</TableSubHead>
+                        </TableRow>
                       </TableHeader>
                       <TableBody>
                         {pagedProducts.map((prod) => {
                           const variantParent = isVariantParent(prod)
-                          const status = variantParent
-                            ? null
-                            : getShelfStockStatus(prod.quantity, prod.reorderPoint)
+                          const status = variantParent ? null : stockStatusFor(prod)
                           const cat = categories.find((c) => c.id === prod.categoryId)?.name || '—'
                           const subcat =
                             subcategories.find((s) => s.id === prod.subcategoryId)?.name || '—'
 
-                            const pricing = variantParent ? null : getPricingBreakdown(prod)
-                            const expanded = expandedId === prod.id
+                          const pricing = variantParent ? null : getPricingBreakdown(prod)
 
                           return (
-                            <Fragment key={prod.id}>
-                            <TableRow className="group">
+                            <TableRow key={prod.id} className="group">
                               <TableCell className="px-2 py-3">
                                 {prod.imageUrl ? (
                                   <img
@@ -423,7 +407,6 @@ export function BranchInventoryPage() {
                                 )}
                               </TableCell>
 
-
                               <TableCell className="px-2 py-3 font-mono text-xs">
                                 {pricing ? formatMoney(pricing.purchase) : '—'}
                               </TableCell>
@@ -442,38 +425,7 @@ export function BranchInventoryPage() {
                               <TableCell className="px-2 py-3 text-xs">
                                 {pricing ? `${pricing.profitPct}%` : '—'}
                               </TableCell>
-
-                              <TableCell className="px-2 py-3">
-                                {variantParent ? (
-                                  <span className="text-xs text-slate-400">Via variants</span>
-                                ) : (
-                                <div className="flex items-center gap-1.5">
-                                <ActionIconButton action="stockRequest" onClick={openDemandRequests} />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  title="Toggle pricing breakdown"
-                                  aria-label="Toggle pricing breakdown"
-                                  aria-expanded={expanded}
-                                  onClick={() => setExpandedId(expanded ? null : prod.id)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <ChevronDown className={cn('size-4 transition-transform', expanded && 'rotate-180')} />
-                                </Button>
-                              </div>
-                                )}
-                              </TableCell>
                             </TableRow>
-
-                            
-                            {expanded && pricing ? (
-                              <TableRow>
-                                <TableCell colSpan={12} className="bg-slate-50/60 px-4 py-3">
-                                  <PricingBreakdown pricing={pricing} />
-                                </TableCell>
-                              </TableRow>
-                            ) : null}
-                          </Fragment>
                           )
                         })}
                       </TableBody>
@@ -490,21 +442,6 @@ export function BranchInventoryPage() {
                 onPageChange={setPage}
                 onPageSizeChange={setPageSize}
               />
-
-              <div className="mt-4 flex flex-col gap-2 border-t border-border pt-3 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:gap-4">
-                <span className="flex items-center gap-1.5">
-                  <span className="size-2 shrink-0 rounded-full bg-rose-500" /> Empty: Out of stock (0
-                  items)
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="size-2 shrink-0 rounded-full bg-amber-500" /> Limited: Under reorder
-                  point threshold
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="size-2 shrink-0 rounded-full bg-emerald-500" /> In Stock: Adequate
-                  supplies
-                </span>
-              </div>
             </SurfaceCard>
           </MotionReveal>
 

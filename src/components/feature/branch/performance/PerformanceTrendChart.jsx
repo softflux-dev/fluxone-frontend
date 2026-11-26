@@ -4,7 +4,6 @@ import {
   Line,
   LineChart,
   ReferenceArea,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -20,21 +19,23 @@ function ChartTooltip({ active, payload }) {
   const row = payload[0]?.payload
   if (!row) return null
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-md">
-      <p className="font-semibold text-slate-800">{formatDateTimeInline(row.scoredAt)}</p>
-      <p className="mt-1 text-slate-600">
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-md dark:border-slate-600 dark:bg-slate-800">
+      <p className="font-semibold text-slate-800 dark:text-slate-100">
+        {formatDateTimeInline(row.scoredAt)}
+      </p>
+      <p className="mt-1 text-slate-600 dark:text-slate-300">
         Score: <strong>{formatScorePercent(row.totalScore)}</strong> · {row.ratingLabel}
       </p>
       {row.changeDelta != null ? (
-        <p className="mt-0.5 text-slate-600">
+        <p className="mt-0.5 text-slate-600 dark:text-slate-300">
           Change: {row.changeDelta > 0 ? '+' : ''}
           {row.changeDelta} pts
         </p>
       ) : (
-        <p className="mt-0.5 text-slate-500">First evaluation</p>
+        <p className="mt-0.5 text-slate-500 dark:text-slate-400">First evaluation</p>
       )}
       {row.evaluatorName ? (
-        <p className="mt-0.5 text-slate-500">by {row.evaluatorName}</p>
+        <p className="mt-0.5 text-slate-500 dark:text-slate-400">by {row.evaluatorName}</p>
       ) : null}
     </div>
   )
@@ -61,48 +62,53 @@ function ActiveDot({ cx, cy, payload, onPointClick }) {
 }
 
 export function PerformanceTrendChart({ chart, onPointClick }) {
-  // Unique X key per evaluation so same-day scores do not collide in Recharts
+  // Chronological order + unique X key per evaluation so same-day scores do not collide
   const data = useMemo(() => {
-    return (chart?.points || []).map((p, index) => ({
-      ...p,
-      index,
-      pointKey: p.evaluationId || `pt-${index}-${p.scoredAt}`,
-      label: formatDateLine(p.scoredAt),
-    }))
+    return [...(chart?.points || [])]
+      .sort((a, b) => new Date(a.scoredAt) - new Date(b.scoredAt))
+      .map((p, index) => ({
+        ...p,
+        index,
+        pointKey: p.evaluationId || `pt-${index}-${p.scoredAt}`,
+        label: formatDateLine(p.scoredAt),
+      }))
   }, [chart?.points])
 
-  const markers = chart?.scaleMarkers || []
-
-  const markerXKeys = useMemo(() => {
-    return markers.map((m) => {
-      const match = data.find((d) => new Date(d.scoredAt) >= new Date(m.effectiveFrom))
-      return { ...m, xKey: match?.pointKey }
-    })
-  }, [markers, data])
-
   return (
-    <div className="rounded-2xl border border-border bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+    <div className="rounded-2xl border border-border bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Score trend</h2>
-          <p className="text-xs text-slate-500">Total score over time (0–100%)</p>
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Score trend
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Total score over time (0–100%)
+          </p>
         </div>
       </div>
 
       {!data.length ? (
-        <p className="py-16 text-center text-sm text-slate-400">No scores in this range</p>
+        <p className="py-16 text-center text-sm text-slate-400 dark:text-slate-300">
+          No scores in this range
+        </p>
       ) : (
-        <div className="h-72 w-full">
+        // text color here feeds currentColor for ticks and grid
+        <div className="h-72 w-full text-slate-500 dark:text-slate-400">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={data}
-              margin={{ top: 16, right: 12, left: 0, bottom: 8 }}
+              margin={{ top: 28, right: 28, left: 0, bottom: 8 }}
               onClick={(state) => {
                 const id = state?.activePayload?.[0]?.payload?.evaluationId
                 if (id) onPointClick?.(id)
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="currentColor"
+                strokeOpacity={0.25}
+              />
               {RATING_BANDS.map((band) => (
                 <ReferenceArea
                   key={band.label}
@@ -112,29 +118,18 @@ export function PerformanceTrendChart({ chart, onPointClick }) {
                   ifOverflow="extendDomain"
                 />
               ))}
-              {markerXKeys.map((m) =>
-                m.xKey ? (
-                  <ReferenceLine
-                    key={m.versionId}
-                    x={m.xKey}
-                    stroke="#94a3b8"
-                    strokeDasharray="4 4"
-                    label={{
-                      value: m.label,
-                      position: 'insideTopRight',
-                      fill: '#64748b',
-                      fontSize: 10,
-                    }}
-                  />
-                ) : null,
-              )}
               <XAxis
                 dataKey="pointKey"
-                tick={{ fontSize: 11 }}
+                padding={{ left: 15, right: 15 }}
+                tick={{ fontSize: 11, fill: 'currentColor' }}
                 tickFormatter={(_, i) => data[i]?.label || ''}
                 interval="preserveStartEnd"
               />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+              <YAxis
+                domain={[0, 100]}
+                width={36}
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+              />
               <Tooltip content={<ChartTooltip />} />
               <Line
                 type="monotone"
@@ -166,22 +161,19 @@ export function PerformanceTrendChart({ chart, onPointClick }) {
                         y={cy - 10}
                         textAnchor="middle"
                         fontSize={10}
-                        fill="#334155"
+                        className="fill-slate-700 dark:fill-slate-200"
                       >
                         {Math.round(payload.totalScore)}
                       </text>
                     </g>
                   )
                 }}
-                activeDot={(props) => (
-                  <ActiveDot {...props} onPointClick={onPointClick} />
-                )}
+                activeDot={(props) => <ActiveDot {...props} onPointClick={onPointClick} />}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       )}
-
     </div>
   )
 }

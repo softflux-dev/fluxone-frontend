@@ -497,262 +497,264 @@ export function StaffFormDialog({
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange} dirty={isDirty(form)}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Staff' : 'Add Staff'}</DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? 'Update branch staff details. Leave password blank to keep the current one.'
-              : 'Create branch staff for this location only (Inventory Manager, Cashier, Website Manager, and more).'}
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={onOpenChange} dirty={isDirty(form)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{isEdit ? 'Edit Staff' : 'Add Staff'}</DialogTitle>
+            <DialogDescription>
+              {isEdit
+                ? 'Update branch staff details. Leave password blank to keep the current one.'
+                : 'Create branch staff for this location only (Inventory Manager, Cashier, Website Manager, and more).'}
+            </DialogDescription>
+          </DialogHeader>
 
-        {formError ? (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-100">
-            {formError}
-          </p>
-        ) : null}
+          {formError ? (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-100">
+              {formError}
+            </p>
+          ) : null}
 
-        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-          <div className="grid gap-4 sm:grid-cols-2">
-        
-<div className="space-y-1.5 sm:col-span-2">
-  <Label htmlFor="staff-email">
-    {form.role === 'cashier' ? 'ID (login)' : 'Email'}
-  </Label>
-  <Input
-    id="staff-email"
-    type={form.role === 'cashier' ? 'text' : 'email'}
-    autoComplete="off"
-    placeholder={
-      form.role === 'cashier'
-        ? 'e.g. cashier01'
-        : 'e.g. manager@example.com'
-    }
-    value={form.email}
-    onChange={(e) => patch('email', e.target.value)}
-    aria-invalid={Boolean(fieldErrors.email)}
-    className={fieldErrorClass(fieldErrors.email)}
-  />
-  <FieldError message={fieldErrors.email} />
-  <p className="text-xs text-slate-500">
-    {form.role === 'cashier'
-      ? 'The cashier signs in with this ID and password only — no email login.'
-      : 'Used with password to log in.'}
-  </p>
-</div>
+          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+            <div className="grid gap-4 sm:grid-cols-2">
 
-{form.role === 'cashier' ? (
-  <div className="space-y-1.5 sm:col-span-2">
-    <Label htmlFor="staff-contact-email">
-      Cashier email {isEdit ? <span className="font-normal text-slate-400">(for credentials)</span> : null}
-    </Label>
-    <Input
-      id="staff-contact-email"
-      type="email"
-      autoComplete="off"
-      placeholder="e.g. cashier@example.com"
-      value={form.contactEmail}
-      onChange={(e) => patch('contactEmail', e.target.value)}
-      aria-invalid={Boolean(fieldErrors.contactEmail)}
-      className={fieldErrorClass(fieldErrors.contactEmail)}
-    />
-    <FieldError message={fieldErrors.contactEmail} />
-    <p className="text-xs text-slate-500">
-      Login ID and password are emailed here. This is not used to sign in.
-    </p>
-  </div>
-) : null}
-
-
-  
-<div className="space-y-1.5 sm:col-span-2">
-  {!isEdit && form.role === 'inventory_manager' ? (
-    <p className="rounded-lg bg-purple-50 px-3 py-2.5 text-xs leading-relaxed text-purple-900 ring-1 ring-purple-100">
-      A secure password will be generated automatically and emailed to this address along with the sign-in link.
-    </p>
-  ) : (
-  <>
-  <Label htmlFor="staff-password">
-    Password {isEdit ? <span className="font-normal text-slate-400">(optional)</span> : null}
-  </Label>
-
-  <div className="relative">
-    <Input
-      id="staff-password"
-      type={showPassword ? 'text' : 'password'}
-      autoComplete="new-password"
-      placeholder={isEdit ? 'Leave blank to keep current' : 'Min. 8 characters'}
-      value={form.password}
-      onChange={(e) => patch('password', e.target.value)}
-      aria-invalid={Boolean(fieldErrors.password)}
-      className={`${fieldErrorClass(fieldErrors.password)} pr-10`}
-    />
-
-    <button
-      type="button"
-      onClick={() => setShowPassword((prev) => !prev)}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
-      aria-label={showPassword ? 'Hide password' : 'Show password'}
-    >
-      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-    </button>
-  </div>
-
-  <FieldError message={fieldErrors.password} />
-  {form.role === 'cashier' ? (
-    <p className="text-xs text-slate-500">
-      {isEdit
-        ? 'Cashiers cannot reset their own password. Enter a new one here and it is emailed to the cashier.'
-        : 'This password is emailed to the cashier. They cannot reset it themselves — you can change it later from Edit.'}
-    </p>
-  ) : null}
-  </>
-  )}
-</div>
-
-
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="staff-name">Name</Label>
-              <Input
-                id="staff-name"
-                value={form.fullName}
-                placeholder="Full name"
-                onChange={(e) => patch('fullName', e.target.value)}
-                aria-invalid={Boolean(fieldErrors.fullName)}
-                className={fieldErrorClass(fieldErrors.fullName)}
-              />
-              <FieldError message={fieldErrors.fullName} />
-            </div>
-
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="staff-role">System Role</Label>
-              <NativeSelect
-                id="staff-role"
-                value={form.role}
-                onChange={(e) => handleRoleChange(e.target.value)}
-                aria-invalid={Boolean(fieldErrors.role)}
-                className={fieldErrorClass(fieldErrors.role)}
-              >
-                {STAFF_ROLES.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
-              </NativeSelect>
-              <FieldError message={fieldErrors.role} />
-              {form.role === 'inventory_manager' ? (
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="staff-email">
+                  {form.role === 'cashier' ? 'ID (login)' : 'Email'}
+                </Label>
+                <Input
+                  id="staff-email"
+                  type={form.role === 'cashier' ? 'text' : 'email'}
+                  autoComplete="off"
+                  placeholder={
+                    form.role === 'cashier'
+                      ? 'e.g. cashier01'
+                      : 'e.g. manager@example.com'
+                  }
+                  value={form.email}
+                  onChange={(e) => patch('email', e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  className={fieldErrorClass(fieldErrors.email)}
+                />
+                <FieldError message={fieldErrors.email} />
                 <p className="text-xs text-slate-500">
-                  Only one Inventory Manager is allowed per branch.
+                  {form.role === 'cashier'
+                    ? 'The cashier signs in with this ID and password only — no email login.'
+                    : 'Used with password to log in.'}
                 </p>
+              </div>
+
+              {form.role === 'cashier' ? (
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="staff-contact-email">
+                    Cashier email {isEdit ? <span className="font-normal text-slate-400">(for credentials)</span> : null}
+                  </Label>
+                  <Input
+                    id="staff-contact-email"
+                    type="email"
+                    autoComplete="off"
+                    placeholder="e.g. cashier@example.com"
+                    value={form.contactEmail}
+                    onChange={(e) => patch('contactEmail', e.target.value)}
+                    aria-invalid={Boolean(fieldErrors.contactEmail)}
+                    className={fieldErrorClass(fieldErrors.contactEmail)}
+                  />
+                  <FieldError message={fieldErrors.contactEmail} />
+                  <p className="text-xs text-slate-500">
+                    Login ID and password are emailed here. This is not used to sign in.
+                  </p>
+                </div>
               ) : null}
+
+
+              <div className="space-y-1.5 sm:col-span-2">
+                {!isEdit && form.role === 'inventory_manager' ? (
+                  <p className="rounded-lg bg-purple-50 px-3 py-2.5 text-xs leading-relaxed text-purple-900 ring-1 ring-purple-100">
+                    A secure password will be generated automatically and emailed to this address along with the sign-in link.
+                  </p>
+                ) : (
+                  <>
+                    <Label htmlFor="staff-password">
+                      Password {isEdit ? <span className="font-normal text-slate-400">(optional)</span> : null}
+                    </Label>
+
+                    <div className="relative">
+                      <Input
+                        id="staff-password"
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        placeholder={isEdit ? 'Leave blank to keep current' : 'Min. 8 characters'}
+                        value={form.password}
+                        onChange={(e) => patch('password', e.target.value)}
+                        aria-invalid={Boolean(fieldErrors.password)}
+                        className={`${fieldErrorClass(fieldErrors.password)} pr-10`}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+
+                    <FieldError message={fieldErrors.password} />
+                    {form.role === 'cashier' ? (
+                      <p className="text-xs text-slate-500">
+                        {isEdit
+                          ? 'Cashiers cannot reset their own password. Enter a new one here and it is emailed to the cashier.'
+                          : 'This password is emailed to the cashier. They cannot reset it themselves — you can change it later from Edit.'}
+                      </p>
+                    ) : null}
+                  </>
+                )}
+              </div>
+
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="staff-name">Name</Label>
+                <Input
+                  id="staff-name"
+                  value={form.fullName}
+                  placeholder="Full name"
+                  onChange={(e) => patch('fullName', e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.fullName)}
+                  className={fieldErrorClass(fieldErrors.fullName)}
+                />
+                <FieldError message={fieldErrors.fullName} />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="staff-role">System Role</Label>
+                <NativeSelect
+                  id="staff-role"
+                  value={form.role}
+                  onChange={(e) => handleRoleChange(e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.role)}
+                  className={fieldErrorClass(fieldErrors.role)}
+                >
+                  {STAFF_ROLES.map((role) => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </NativeSelect>
+                <FieldError message={fieldErrors.role} />
+                {form.role === 'inventory_manager' ? (
+                  <p className="text-xs text-slate-500">
+                    Only one Inventory Manager is allowed per branch.
+                  </p>
+                ) : null}
+              </div>
+
+              <StaffScheduleFields
+                form={form}
+                branchHours={branchHours}
+                hoursWarning={hoursWarning}
+                fieldErrors={fieldErrors}
+                onPatch={patch}
+                ids={{
+                  workingDays: FIELD_IDS.workingDays,
+                  scheduleStart: FIELD_IDS.scheduleStart,
+                  scheduleEnd: FIELD_IDS.scheduleEnd,
+                  scheduleBreakStart: FIELD_IDS.scheduleBreakStart,
+                  scheduleBreakEnd: FIELD_IDS.scheduleBreakEnd,
+                }}
+              />
+
+              <StaffHardwareAssignFields
+                role={form.role}
+                hardwareType={form.hardwareType}
+                hardwareDeviceId={form.hardwareDeviceId}
+                hardwareOptions={hardwareOptions}
+                hardwareLoading={hardwareLoading}
+                scheduleReady={scheduleReady}
+                workingDays={form.workingDays}
+                scheduleStart={form.scheduleStart}
+                scheduleEnd={form.scheduleEnd}
+                hardwareSearch={hardwareSearch}
+                selectedSlotKey={form.hardwareSlotKey}
+                fieldErrors={fieldErrors}
+                onSearchChange={setHardwareSearch}
+                onTypeChange={(type) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    hardwareType: type,
+                    hardwareDeviceId: '',
+                    hardwareSlotKey: '',
+                  }))
+                  clearField('hardwareType')
+                  clearField('hardwareDeviceId')
+                  clearField('hardwareSlotKey')
+                }}
+                onDeviceChange={(id) => patch('hardwareDeviceId', id)}
+                onSelectDevice={handleSelectDevice}
+                onSelectSlot={handleSelectSlot}
+                onClearSelection={clearHardwareSelection}
+                onUnavailable={(device) => {
+                  setReallocateOpen(false)
+                  setBlockedDevice(device)
+                }}
+                ids={{
+                  hardwareType: FIELD_IDS.hardwareType,
+                  hardwareDeviceId: FIELD_IDS.hardwareDeviceId,
+                }}
+              />
+
+              <ImageUploadField
+                id="staff-image"
+                label="Photo"
+                optionalLabel="(optional)"
+                value={form.image}
+                existingImageUrl={isEdit ? initialStaff?.imageUrl : null}
+                onChange={(file) => patch('image', file)}
+              />
             </div>
 
-            <StaffScheduleFields
-              form={form}
-              branchHours={branchHours}
-              hoursWarning={hoursWarning}
-              fieldErrors={fieldErrors}
-              onPatch={patch}
-              ids={{
-                workingDays: FIELD_IDS.workingDays,
-                scheduleStart: FIELD_IDS.scheduleStart,
-                scheduleEnd: FIELD_IDS.scheduleEnd,
-                scheduleBreakStart: FIELD_IDS.scheduleBreakStart,
-                scheduleBreakEnd: FIELD_IDS.scheduleBreakEnd,
-              }}
-            />
-
-            <StaffHardwareAssignFields
-              role={form.role}
-              hardwareType={form.hardwareType}
-              hardwareDeviceId={form.hardwareDeviceId}
-              hardwareOptions={hardwareOptions}
-              hardwareLoading={hardwareLoading}
-              scheduleReady={scheduleReady}
-              hardwareSearch={hardwareSearch}
-              selectedSlotKey={form.hardwareSlotKey}
-              fieldErrors={fieldErrors}
-              onSearchChange={setHardwareSearch}
-              onTypeChange={(type) => {
-                setForm((prev) => ({
-                  ...prev,
-                  hardwareType: type,
-                  hardwareDeviceId: '',
-                  hardwareSlotKey: '',
-                }))
-                clearField('hardwareType')
-                clearField('hardwareDeviceId')
-                clearField('hardwareSlotKey')
-              }}
-              onDeviceChange={(id) => patch('hardwareDeviceId', id)}
-              onSelectDevice={handleSelectDevice}
-              onSelectSlot={handleSelectSlot}
-              onClearSelection={clearHardwareSelection}
-              onUnavailable={(device) => {
-                setReallocateOpen(false)
-                setBlockedDevice(device)
-              }}
-              ids={{
-                hardwareType: FIELD_IDS.hardwareType,
-                hardwareDeviceId: FIELD_IDS.hardwareDeviceId,
-              }}
-            />
-
-            <ImageUploadField
-              id="staff-image"
-              label="Photo"
-              optionalLabel="(optional)"
-              value={form.image}
-              existingImageUrl={isEdit ? initialStaff?.imageUrl : null}
-              onChange={(file) => patch('image', file)}
-            />
-          </div>
-
-          <DialogFooter>
-            <DialogCancelButton
-              disabled={loading}
-              className="w-full sm:w-auto"
-            />
-            <Button
-              type="submit"
-              loading={loading}
-              variant="brand"
-              className="w-full sm:w-auto"
-            >
-              {isEdit ? 'Save changes' : 'Add Staff'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-    <ResourceAssignedDialog
-      open={Boolean(blockedDevice) && !reallocateOpen}
-      device={blockedDevice}
-      onOpenChange={(next) => {
-        if (!next) setBlockedDevice(null)
-      }}
-      onReallocate={() => setReallocateOpen(true)}
-    />
-    <HardwareReallocateDialog
-      open={reallocateOpen}
-      holder={blockedDevice?.holder}
-      onOpenChange={setReallocateOpen}
-      onReallocated={(result) => {
-        const freedId = result?.releasedHardwareId || blockedDevice?.id
-        setBlockedDevice(null)
-        setReallocateOpen(false)
-        if (freedId) {
-          setForm((prev) => ({
-            ...prev,
-            hardwareDeviceId: freedId,
-            hardwareSlotKey: '',
-          }))
-        }
-        setAvailabilityTick((tick) => tick + 1)
-      }}
-    />
+            <DialogFooter>
+              <DialogCancelButton
+                disabled={loading}
+                className="w-full sm:w-auto"
+              />
+              <Button
+                type="submit"
+                loading={loading}
+                variant="brand"
+                className="w-full sm:w-auto"
+              >
+                {isEdit ? 'Save changes' : 'Add Staff'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <ResourceAssignedDialog
+        open={Boolean(blockedDevice) && !reallocateOpen}
+        device={blockedDevice}
+        onOpenChange={(next) => {
+          if (!next) setBlockedDevice(null)
+        }}
+        onReallocate={() => setReallocateOpen(true)}
+      />
+      <HardwareReallocateDialog
+        open={reallocateOpen}
+        holder={blockedDevice?.holder}
+        onOpenChange={setReallocateOpen}
+        onReallocated={(result) => {
+          const freedId = result?.releasedHardwareId || blockedDevice?.id
+          setBlockedDevice(null)
+          setReallocateOpen(false)
+          if (freedId) {
+            setForm((prev) => ({
+              ...prev,
+              hardwareDeviceId: freedId,
+              hardwareSlotKey: '',
+            }))
+          }
+          setAvailabilityTick((tick) => tick + 1)
+        }}
+      />
     </>
   )
 }
