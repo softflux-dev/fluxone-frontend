@@ -174,7 +174,7 @@ if (!loginId) {
   if (isCashier) {
     const contact = String(fields.contactEmail || '').trim()
     if (!contact && !isEdit) errors.contactEmail = 'Cashier email is required to send login credentials'
-    else if (contact && !/^[^s@]+@[^s@]+.[^s@]+$/.test(contact)) errors.contactEmail = 'Please enter a valid email address'
+    else if (contact && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) errors.contactEmail = 'Please enter a valid email address'
   }
 
   // Inventory Manager gets a server-generated password by email

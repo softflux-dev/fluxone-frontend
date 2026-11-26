@@ -11,6 +11,7 @@ export function buildStaffPayload(fields) {
   const {
     fullName,
     email,
+    contactEmail,
     password,
     role,
     hardwareDeviceId,
@@ -32,6 +33,10 @@ export function buildStaffPayload(fields) {
     fullName: String(fullName || '').trim(),
     email: String(email || '').trim(),
     role,
+    // Cashier credentials mailbox (login stays on `email` = ID)
+    ...(role === 'cashier' && String(contactEmail || '').trim()
+      ? { contactEmail: String(contactEmail).trim() }
+      : {}),
     // Always send so BM can clear an assignment (null = unassigned).
     hardwareDeviceId: String(hardwareDeviceId || '').trim() || null,
     hardwareAllocationStart: hardwareAllocationStart || undefined,
