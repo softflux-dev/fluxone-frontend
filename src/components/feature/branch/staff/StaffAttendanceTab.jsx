@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Calendar as CalendarIcon, List, CheckSquare, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar as CalendarIcon, List, CheckSquare } from 'lucide-react'
 import { SurfaceCard } from '@/components/shared/SurfaceCard'
 import { Button } from '@/components/ui/button'
 import { NativeSelect } from '@/components/ui/select'
@@ -22,6 +22,7 @@ import { toastError, toastSuccess } from '@/lib/toast'
 import { useClientPagination } from '@/hooks/shared/useClientPagination'
 import { cn } from '@/lib/utils'
 import { ActionIconButton } from '@/components/shared/ActionIconButton'
+import { StaffAttendanceCalendar } from './StaffAttendanceCalendar'
 
 function todayIso() {
   return new Date().toISOString().split('T')[0]
@@ -123,7 +124,6 @@ export function StaffAttendanceTab({ designations = [], staff = [] }) {
   const [filterLogDate, setFilterLogDate] = useState(todayIso)
   const [showAllDates, setShowAllDates] = useState(false)
   const [filterDesignation, setFilterDesignation] = useState('')
-  const [currentDate, setCurrentDate] = useState(new Date())
   const [localAttendance, setLocalAttendance] = useState({})
 
   const fetchLogs = async () => {
@@ -156,22 +156,6 @@ export function StaffAttendanceTab({ designations = [], staff = [] }) {
     setLocalAttendance(nextAttendance)
   }, [selectedDate, staff, logs])
 
-  const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate()
-  const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay()
-
-  const year = currentDate.getFullYear()
-  const month = currentDate.getMonth()
-  const daysInMonth = getDaysInMonth(year, month)
-  const firstDayIndex = getFirstDayOfMonth(year, month)
-
-  const monthsList = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ]
-
-  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1))
-  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1))
-
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
       const matchedStaff = staff.find((s) => s.id === log.staffId)
@@ -197,11 +181,6 @@ export function StaffAttendanceTab({ designations = [], staff = [] }) {
     total: logTotal,
     slice: pagedLogs,
   } = useClientPagination(filteredLogs)
-
-  const getLogsForDate = (dayNum) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
-    return logs.filter((log) => String(log.workDate || '').split('T')[0] === dateStr)
-  }
 
   function handleShowAllDates(checked) {
     setShowAllDates(checked)
@@ -454,69 +433,14 @@ export function StaffAttendanceTab({ designations = [], staff = [] }) {
               />
             </SurfaceCard>
           ) : (
-            <SurfaceCard
-              title={`${monthsList[month]} ${year}`}
-              actions={
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="icon" className="size-8" onClick={prevMonth}>
-                    <ChevronLeft className="size-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="size-8" onClick={nextMonth}>
-                    <ChevronRight className="size-4" />
-                  </Button>
-                </div>
-              }
-            >
-              <div className="w-full">
-                <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-slate-400 sm:gap-2 sm:text-xs">
-                  <div>S</div>
-                  <div>M</div>
-                  <div>T</div>
-                  <div>W</div>
-                  <div>T</div>
-                  <div>F</div>
-                  <div>S</div>
-                </div>
-                <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                  {Array.from({ length: firstDayIndex }).map((_, i) => (
-                    <div
-                      key={`empty-${i}`}
-                      className="h-14 rounded-lg border border-dashed border-slate-100 bg-slate-50/50 sm:h-20"
-                    />
-                  ))}
-                  {Array.from({ length: daysInMonth }).map((_, i) => {
-                    const dayNum = i + 1
-                    const dayLogs = getLogsForDate(dayNum)
-                    const presents = dayLogs.filter((l) => l.status === 'present').length
-                    const absents = dayLogs.filter((l) => l.status === 'absent').length
-                    return (
-                      <div
-                        key={`day-${dayNum}`}
-                        className="flex h-14 flex-col justify-between rounded-lg border border-border bg-white p-1 hover:bg-slate-50 sm:h-20"
-                      >
-                        <span className="text-[10px] font-bold text-slate-700 sm:text-xs">{dayNum}</span>
-                        {dayLogs.length > 0 ? (
-                          <div className="space-y-0.5 text-[8px] sm:text-[10px]">
-                            {presents > 0 && (
-                              <div className="truncate rounded bg-emerald-50 px-0.5 text-left text-emerald-800 sm:px-1">
-                                P:{presents}
-                              </div>
-                            )}
-                            {absents > 0 && (
-                              <div className="truncate rounded bg-rose-50 px-0.5 text-left text-rose-800 sm:px-1">
-                                A:{absents}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="hidden text-[9px] italic text-slate-300 sm:inline">No logs</span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </SurfaceCard>
+            <StaffAttendanceCalendar
+              logs={logs}
+              staff={staff}
+              designations={designations}
+              designationId={filterDesignation}
+              onDesignationChange={setFilterDesignation}
+              loading={loading}
+            />
           )}
         </>
       ) : (
