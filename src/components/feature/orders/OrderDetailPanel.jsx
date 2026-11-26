@@ -73,17 +73,6 @@ export function OrderDetailPanel({
 
             {showDecisionActions ? (
       <>
-        {onEdit ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full cursor-pointer sm:w-auto"
-            disabled={loading || actionsBusy}
-            onClick={() => onEdit(resolved)}
-          >
-            Edit
-          </Button>
-        ) : null}
         {onReject ? (
           <Button
             type="button"

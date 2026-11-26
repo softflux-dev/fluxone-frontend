@@ -26,7 +26,9 @@ import { apiClient } from '@/api/api'
 import { useAuth } from '@/context/AuthContext'
 import { useClientPagination } from '@/hooks/shared/useClientPagination'
 import {
+  SCALE_SUM_TARGET,
   isScaleDraftDirty,
+  isScaleSumOverTarget,
   sumScalePoints,
 } from '@/lib/branch/performanceScales'
 import {
@@ -161,15 +163,16 @@ export function StaffPerformanceTab({
   const isDirty = isScaleDraftDirty(criteriaDraft, activeCriteria)
   const canSaveScale = pointsUsed > 0 && isDirty
 
-  // Parent header: Add Criterion is never disabled by total (any total is valid)
+  // Parent header: disable Add Criterion once the draft total reaches the 100-point cap
+  const scaleFull = isScaleSumOverTarget(criteriaDraft)
   useEffect(() => {
     onScaleStateChange?.({
       pointsUsed,
-      scaleFull: false,
+      scaleFull,
       isDirty,
       canSaveScale,
     })
-  }, [pointsUsed, isDirty, canSaveScale, onScaleStateChange])
+  }, [pointsUsed, isDirty, canSaveScale, scaleFull, onScaleStateChange])
 
   const openScoringModal = (employee) => setScoringEmployee(employee)
 
@@ -223,6 +226,16 @@ export function StaffPerformanceTab({
         block: 'center',
       })
       return toastError('Criteria maximums must total more than 0')
+    }
+    if (pointsUsed > SCALE_SUM_TARGET) {
+      document.getElementById('scoring-scale-total')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+      return toastError(
+        `Total scoring scale cannot exceed 100 points (currently ${pointsUsed}). ` +
+          'Edit or remove criteria to bring the total to 100 or less.',
+      )
     }
     if (!isDirty) {
       return toastInfo('No changes to save — scoring scale already matches the published version.')
@@ -485,7 +498,7 @@ export function StaffPerformanceTab({
                             {renderStatusBadge(emp)}
                           </TableCell>
                           <TableCell className="px-2.5 py-2 text-xs font-semibold whitespace-nowrap text-slate-800">
-                            {emp.score == null ? '—' : `${Number(emp.score).toFixed(0)} / 100cl`}
+                            {emp.score == null ? '—' : `${Number(emp.score).toFixed(0)} / 100`}
                           </TableCell>
                           <TableCell className="px-2.5 py-2 whitespace-nowrap">
                             {renderTrend(emp)}

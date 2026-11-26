@@ -45,6 +45,7 @@ import { Eye, EyeOff } from 'lucide-react'
 
 const FIELD_IDS = {
   email: 'staff-email',
+  contactEmail: 'staff-contact-email',
   password: 'staff-password',
   fullName: 'staff-name',
   role: 'staff-role',
@@ -60,6 +61,7 @@ const FIELD_IDS = {
 
 const EMPTY_FORM = {
   email: '',
+  contactEmail: '',
   password: '',
   fullName: '',
   role: 'inventory_manager',
@@ -162,6 +164,7 @@ export function StaffFormDialog({
         const staffDays = normalizeWorkingDays(initialStaff.workingDays)
         const nextForm = {
           email: initialStaff.email || '',
+          contactEmail: initialStaff.contactEmail || '',
           password: '',
           fullName: initialStaff.fullName || '',
           role: resolveRole(initialStaff),
@@ -461,6 +464,10 @@ export function StaffFormDialog({
     try {
       const result = await onSubmit?.({
         ...form,
+        // only cashiers have a separate mailbox
+        contactEmail: form.role === 'cashier' ? form.contactEmail.trim() : undefined,
+        // IM password is generated server-side and emailed
+        ...(!isEdit && form.role === 'inventory_manager' ? { password: undefined } : {}),
         workingDays: normalizeWorkingDays(form.workingDays),
         hardwareAllocationStart: finalAllocStart,
         hardwareAllocationEnd: finalAllocEnd,
@@ -530,13 +537,43 @@ export function StaffFormDialog({
   />
   <FieldError message={fieldErrors.email} />
   <p className="text-xs text-slate-500">
-    Used with password to log in.
+    {form.role === 'cashier'
+      ? 'The cashier signs in with this ID and password only — no email login.'
+      : 'Used with password to log in.'}
   </p>
 </div>
+
+{form.role === 'cashier' ? (
+  <div className="space-y-1.5 sm:col-span-2">
+    <Label htmlFor="staff-contact-email">
+      Cashier email {isEdit ? <span className="font-normal text-slate-400">(for credentials)</span> : null}
+    </Label>
+    <Input
+      id="staff-contact-email"
+      type="email"
+      autoComplete="off"
+      placeholder="e.g. cashier@example.com"
+      value={form.contactEmail}
+      onChange={(e) => patch('contactEmail', e.target.value)}
+      aria-invalid={Boolean(fieldErrors.contactEmail)}
+      className={fieldErrorClass(fieldErrors.contactEmail)}
+    />
+    <FieldError message={fieldErrors.contactEmail} />
+    <p className="text-xs text-slate-500">
+      Login ID and password are emailed here. This is not used to sign in.
+    </p>
+  </div>
+) : null}
 
 
   
 <div className="space-y-1.5 sm:col-span-2">
+  {!isEdit && form.role === 'inventory_manager' ? (
+    <p className="rounded-lg bg-purple-50 px-3 py-2.5 text-xs leading-relaxed text-purple-900 ring-1 ring-purple-100">
+      A secure password will be generated automatically and emailed to this address along with the sign-in link.
+    </p>
+  ) : (
+  <>
   <Label htmlFor="staff-password">
     Password {isEdit ? <span className="font-normal text-slate-400">(optional)</span> : null}
   </Label>
@@ -564,6 +601,15 @@ export function StaffFormDialog({
   </div>
 
   <FieldError message={fieldErrors.password} />
+  {form.role === 'cashier' ? (
+    <p className="text-xs text-slate-500">
+      {isEdit
+        ? 'Cashiers cannot reset their own password. Enter a new one here and it is emailed to the cashier.'
+        : 'This password is emailed to the cashier. They cannot reset it themselves — you can change it later from Edit.'}
+    </p>
+  ) : null}
+  </>
+  )}
 </div>
 
 
