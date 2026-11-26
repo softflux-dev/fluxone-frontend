@@ -169,7 +169,9 @@ if (!loginId) {
 
   if (!fields.role) errors.role = 'System role is required'
 
-  if (!isEdit && (!fields.password || String(fields.password).length < 8)) {
+  // Inventory Manager gets a server-generated password by email
+  const autoPassword = !isEdit && fields.role === 'inventory_manager'
+  if (!isEdit && !autoPassword && (!fields.password || String(fields.password).length < 8)) {
     errors.password = 'Password must be at least 8 characters'
   }
   if (isEdit && fields.password && String(fields.password).length < 8) {

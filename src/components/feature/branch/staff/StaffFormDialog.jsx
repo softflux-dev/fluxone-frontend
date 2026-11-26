@@ -461,6 +461,8 @@ export function StaffFormDialog({
     try {
       const result = await onSubmit?.({
         ...form,
+        // IM password is generated server-side and emailed
+        ...(!isEdit && form.role === 'inventory_manager' ? { password: undefined } : {}),
         workingDays: normalizeWorkingDays(form.workingDays),
         hardwareAllocationStart: finalAllocStart,
         hardwareAllocationEnd: finalAllocEnd,
@@ -537,6 +539,12 @@ export function StaffFormDialog({
 
   
 <div className="space-y-1.5 sm:col-span-2">
+  {!isEdit && form.role === 'inventory_manager' ? (
+    <p className="rounded-lg bg-purple-50 px-3 py-2.5 text-xs leading-relaxed text-purple-900 ring-1 ring-purple-100">
+      A secure password will be generated automatically and emailed to this address along with the sign-in link.
+    </p>
+  ) : (
+  <>
   <Label htmlFor="staff-password">
     Password {isEdit ? <span className="font-normal text-slate-400">(optional)</span> : null}
   </Label>
@@ -564,6 +572,8 @@ export function StaffFormDialog({
   </div>
 
   <FieldError message={fieldErrors.password} />
+  </>
+  )}
 </div>
 
 

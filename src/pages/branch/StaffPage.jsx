@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { useBranchStaff } from '@/hooks/branch/useBranchStaff'
 import { useDebouncedSearch } from '@/hooks/shared/useDebouncedSearch'
 import { BRAND } from '@/lib/constants'
-import { toastError, toastSuccess } from '@/lib/toast'
+import { toastError, toastInfo, toastSuccess } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import { useBranchDesignations } from '@/hooks/branch/useBranchDesignations'
 
@@ -117,7 +117,15 @@ export function StaffPage() {
         ? await updateStaff(editing.id, fields)
         : await createStaff(fields)
     if (result.success) {
-      toastSuccess(formMode === 'edit' ? 'Staff updated' : 'Staff created')
+      if (formMode === 'edit') {
+        toastSuccess('Staff updated')
+      } else if (result.data?.credentialsEmailed === true) {
+        toastSuccess('Staff created — login credentials emailed')
+      } else if (result.data?.credentialsEmailed === false) {
+        toastInfo('Staff created, but the credentials email could not be sent. Set a password from Edit.')
+      } else {
+        toastSuccess('Staff created')
+      }
     } else {
       toastError(result.error || 'Save failed')
     }
