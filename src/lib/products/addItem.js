@@ -106,6 +106,7 @@ export function assertSellingGtePurchase(purchasePrice, sellingPrice) {
   const purchase = Number(purchasePrice)
   const selling = Number(sellingPrice)
   if (!Number.isFinite(purchase) || !Number.isFinite(selling)) return null
+  if (selling <= 0) return 'Selling price must be greater than zero'
   if (selling < purchase) {
     return 'Selling price must be greater than or equal to purchase price'
   }

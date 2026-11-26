@@ -68,7 +68,7 @@ export function DailyPriceReviewDialog({ open, onOpenChange, onChanged }) {
       toastError('Enter a valid purchase price')
       return
     }
-    if (!Number.isFinite(sellingPrice) || sellingPrice < 0) {
+    if (!Number.isFinite(sellingPrice) || sellingPrice <= 0) {
       toastError('Enter a valid selling price')
       return
     }

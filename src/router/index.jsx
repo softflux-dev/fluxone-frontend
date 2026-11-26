@@ -23,6 +23,7 @@ import { EditBundlePage } from '@/pages/inventory/EditBundlePage'
 import { AddItemPage } from '@/pages/inventory/AddItemPage'
 import { EditItemPage } from '@/pages/inventory/EditItemPage'
 import { InventoryControlPage } from '@/pages/inventory/InventoryControlPage'
+import { PricingApprovalsPage } from '@/pages/inventory/PricingApprovalsPage'
 import { SuppliersPage } from '@/pages/inventory/SuppliersPage'
 import { PurchaseOrdersPage } from '@/pages/inventory/PurchaseOrdersPage'
 import { OrderDetailPage } from '@/pages/inventory/OrderDetailPage'
@@ -123,6 +124,7 @@ const router = createBrowserRouter([
               { path: 'bundles', element: <AddBundlePage /> },
               { path: 'bundles/:id/edit', element: <EditBundlePage /> },
               { path: 'control', element: <InventoryControlPage /> },
+              { path: 'pricing-approvals', element: <PricingApprovalsPage /> },
               { path: 'suppliers', element: <SuppliersPage /> },
               { path: 'orders', element: <PurchaseOrdersPage /> },
               { path: 'orders/generate', element: <GenerateOrderPage /> },

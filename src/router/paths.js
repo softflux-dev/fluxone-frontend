@@ -14,6 +14,7 @@ export const PATHS = {
     // Edit non-bundle item — same layout as Add Item
     productsEdit: (id) => `/inventory/products/${id}/edit`,
     control: '/inventory/control',
+    pricingApprovals: '/inventory/pricing-approvals',
     suppliers: '/inventory/suppliers',
     orders: '/inventory/orders',
     ordersGenerate: '/inventory/orders/generate',

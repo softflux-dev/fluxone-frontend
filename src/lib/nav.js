@@ -8,6 +8,7 @@ const INVENTORY_NAV = [
   { to: PATHS.inventory.products, label: 'Products', end: false },
   // { to: PATHS.inventory.bundles, label: 'Bundles', end: false },
   { to: PATHS.inventory.control, label: 'Control', end: false },
+  { to: PATHS.inventory.pricingApprovals, label: 'Pricing Approval', end: false },
 ]
 
 const BRANCH_NAV = [

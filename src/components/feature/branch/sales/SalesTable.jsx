@@ -89,6 +89,30 @@ function StatusPill({ sale }) {
   )
 }
 
+// BM sees sales made at a Local Admin (POS) price the IM has not approved / has rejected
+const DISPUTE_TAGS = {
+  pending: { label: 'Price dispute · Pending', className: 'bg-amber-50 text-amber-800 ring-amber-200' },
+  approved: { label: 'Price dispute · Approved', className: 'bg-emerald-50 text-emerald-800 ring-emerald-200' },
+  rejected: { label: 'Price dispute · Rejected', className: 'bg-red-50 text-red-800 ring-red-200' },
+  superseded: { label: 'Price dispute · Overridden', className: 'bg-slate-100 text-slate-700 ring-slate-200' },
+}
+
+function PriceDisputeTag({ sale }) {
+  const tag = DISPUTE_TAGS[sale.priceDispute]
+  if (!tag) return null
+  return (
+    <span
+      className={cn(
+        'mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset',
+        tag.className,
+      )}
+      title="Sold at a price changed on the POS and reviewed by the Inventory Manager"
+    >
+      {tag.label}
+    </span>
+  )
+}
+
 function PrintButton({ sale, onPrint }) {
   return (
     <Button
@@ -147,7 +171,10 @@ function SaleMobileCard({ sale, index, money, onPrint }) {
             <DateTimeLines value={sale.soldAt} />
           </div>
         </div>
-        <StatusPill sale={sale} />
+        <div className="flex flex-col items-end">
+          <StatusPill sale={sale} />
+          <PriceDisputeTag sale={sale} />
+        </div>
       </div>
 
       <div className="mt-3">
@@ -329,7 +356,10 @@ export function SalesTable({
                         <ChangeCell sale={sale} money={money} />
                       </TableCell>
                       <TableCell>
-                        <StatusPill sale={sale} />
+                        <div className="flex flex-col items-start">
+                          <StatusPill sale={sale} />
+                          <PriceDisputeTag sale={sale} />
+                        </div>
                       </TableCell>
                       <TableCell>
                         <PrintButton sale={sale} onPrint={onPrint} />
