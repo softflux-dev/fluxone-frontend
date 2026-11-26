@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Package, Printer, PackagePlus, Trash2 } from 'lucide-react'
 import { BarcodeCell } from '@/components/feature/products/BarcodeCell'
 import { priceOrDash, PricingColumns } from '@/components/feature/products/PricingColumns'
-import { ProductImageCell, ProductStatusToggle } from '@/components/feature/products/ProductStatusToggle'
+import { ProductImageCell, ProductStatusToggle, ProductTypePill } from '@/components/feature/products/ProductStatusToggle'
 import { PromotionColumns } from '@/components/feature/products/PromotionColumns'
 import { RowActionButtons } from '@/components/shared/ActionIconButton'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -250,7 +250,7 @@ export function ProductTable({
 onChange={() => onToggleRow?.(row.id)}
                     aria-label={`Select ${row.name || 'product'}`}
                   />
-                  <ProductImageCell src={row.imageUrl} name={row.name} />
+                  <ProductImageCell src={row.imageUrl} name={row.name}  type={row.type} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -260,7 +260,7 @@ onChange={() => onToggleRow?.(row.id)}
                           className="text-sm font-semibold text-slate-900"
                         />
                         <p className="font-mono text-[11px] text-slate-400">{displayItemCode(row)}</p>
-                        <p className="text-[11px] capitalize text-slate-400">{row.type}</p>
+                        <ProductTypePill type={row.type} className="mt-1" />
                       </div>
                       <ProductStatusToggle
                         status={row.status}
@@ -435,7 +435,7 @@ onChange={() => onToggleRow?.(row.id)}
                           style={{ width: TABLE_PIN.identity - 16 }}
                         >
                           <div className="shrink-0">
-                            <ProductImageCell src={row.imageUrl} name={row.name} />
+                            <ProductImageCell src={row.imageUrl} name={row.name}  type={row.type} />
                           </div>
                           <div className="min-w-0 flex-1">
                             <TruncatedText
@@ -443,7 +443,7 @@ onChange={() => onToggleRow?.(row.id)}
                               lines={2}
                               className="font-medium text-slate-900"
                             />
-                            <p className="text-[11px] capitalize text-slate-400">{row.type}</p>
+                            <ProductTypePill type={row.type} className="mt-1" />
                           </div>
                         </div>
                       </TableIdentityCell>
