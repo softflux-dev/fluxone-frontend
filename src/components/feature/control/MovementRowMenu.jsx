@@ -1,15 +1,9 @@
-import { MoreVertical } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { ActionIconButton } from '@/components/shared/ActionIconButton'
 import { CONTROL_UI_TAB } from '@/lib/control/controlTabs'
 import { MOVEMENT_TYPES } from '@/lib/control/mapStockMovement'
 import { cn } from '@/lib/utils'
 
-// Row ⋯ menu — tab-aware actions for Control history tables.
+// Row actions — direct icons (no ⋮ dropdown), tab-aware for Control history tables.
 export function MovementRowMenu({
   row,
   tab,
@@ -28,28 +22,28 @@ export function MovementRowMenu({
   }
 
   return (
-    <div className={cn('relative inline-flex', className)}>
-      <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800">
-          <MoreVertical className="size-4" />
-          <span className="sr-only">Row actions</span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-48">
-          {canUpdateStock ? (
-            <DropdownMenuItem onClick={() => onUpdateStock?.(row)}>
-              Update stock
-            </DropdownMenuItem>
-          ) : null}
-          {canViewDetails ? (
-            <DropdownMenuItem onClick={() => onViewDetails?.(row)}>
-              View details & history
-            </DropdownMenuItem>
-          ) : null}
-          {canEditThreshold ? (
-            <DropdownMenuItem onClick={() => onEditThreshold?.(row)}>Edit</DropdownMenuItem>
-          ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <div className={cn('inline-flex items-center justify-start gap-2.5', className)}>
+      {canUpdateStock ? (
+        <ActionIconButton
+          action="edit"
+          label="Update stock"
+          onClick={() => onUpdateStock?.(row)}
+        />
+      ) : null}
+      {canViewDetails ? (
+        <ActionIconButton
+          action="view"
+          label="View details & history"
+          onClick={() => onViewDetails?.(row)}
+        />
+      ) : null}
+      {canEditThreshold ? (
+        <ActionIconButton
+          action="edit"
+          label="Edit"
+          onClick={() => onEditThreshold?.(row)}
+        />
+      ) : null}
     </div>
   )
 }

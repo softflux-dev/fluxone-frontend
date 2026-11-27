@@ -34,15 +34,16 @@ export const LEDGER_KIND_OPTIONS = [
   { id: '', label: 'All types' },
   { id: MOVEMENT_TYPES.DAMAGED, label: 'Damaged' },
   { id: MOVEMENT_TYPES.EXPIRED, label: 'Expired' },
+  { id: 'stock_in', label: 'Stock in' },
+
   { id: MOVEMENT_TYPES.OTHER, label: 'Other' },
-  { id: MOVEMENT_TYPES.ADJUSTMENT, label: 'Adjustment' },
-  { id: MOVEMENT_TYPES.IN, label: 'Stock in' },
 ]
 
-// Stock Out kind filter (no Adjustment / Stock in)
+// Stock Out kind filter
 export const STOCK_OUT_KIND_OPTIONS = [
   { id: '', label: 'All types' },
-  { id: MOVEMENT_TYPES.OUT, label: 'Sale' },
+  { id: 'sale', label: 'Sale' },
+
   { id: MOVEMENT_TYPES.DAMAGED, label: 'Damaged' },
   { id: MOVEMENT_TYPES.EXPIRED, label: 'Expired' },
   { id: MOVEMENT_TYPES.OTHER, label: 'Other' },

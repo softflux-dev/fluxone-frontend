@@ -1,4 +1,5 @@
-import { MonitorOff, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Monitor, MonitorOff, Users } from 'lucide-react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { EntityStatusToggle, isEntityActive } from '@/components/shared/EntityStatusToggle'
 import { SurfaceCard } from '@/components/shared/SurfaceCard'
@@ -62,6 +63,37 @@ function ScheduleBlock({ row }) {
   )
 }
 
+// Hardware thumbnail: photo, or a device icon when there is no photo / the photo fails to load
+function HardwareThumb({ src, name }) {
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    setFailed(false)
+  }, [src])
+
+  if (src && !failed) {
+    return (
+      <img
+        src={src}
+        alt={name || ''}
+        onError={() => setFailed(true)}
+        className="size-9 shrink-0 rounded-lg bg-white object-cover shadow-sm ring-1 ring-slate-200 dark:ring-slate-700"
+      />
+    )
+  }
+
+  return (
+    <div
+      className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
+      style={{ background: `linear-gradient(145deg, ${BRAND.purple}, ${BRAND.deep})` }}
+      role="img"
+      aria-label={name || 'No hardware image'}
+    >
+      <Monitor className="size-4" />
+    </div>
+  )
+}
+
 // clean and optimized code — device profile for Assigned hardware column
 function AssignedHardwareCell({ row }) {
   const hasHardware = Boolean(row.hardwareName || row.hardwareCode || row.hardwareDeviceId)
@@ -81,20 +113,7 @@ function AssignedHardwareCell({ row }) {
 
   return (
     <div className="flex min-w-0 items-start gap-2.5">
-      {row.hardwareImageUrl ? (
-        <img
-          src={row.hardwareImageUrl}
-          alt=""
-          className="size-9 shrink-0 rounded-lg object-cover ring-1 ring-border"
-        />
-      ) : (
-        <div
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white"
-          style={{ background: `linear-gradient(145deg, ${BRAND.purple}, ${BRAND.deep})` }}
-        >
-          {(row.hardwareName || 'HW').slice(0, 1).toUpperCase()}
-        </div>
-      )}
+      <HardwareThumb src={row.hardwareImageUrl} name={row.hardwareName} />
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-slate-900">
           {row.hardwareName || 'Hardware'}

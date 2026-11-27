@@ -2,7 +2,6 @@ import {
   Banknote,
   Check,
   FileText,
-  Package,
   Printer,
   RotateCcw,
   CalendarDays,
@@ -11,7 +10,6 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { DateTimeLines } from '@/components/shared/DateTimeLines'
 import { DataCard, ResponsiveDataShell } from '@/components/shared/ResponsiveDataShell'
 import { SurfaceCard } from '@/components/shared/SurfaceCard'
-import { TruncatedText } from '@/components/shared/TruncatedText'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -48,7 +46,7 @@ function SaleIdBadge({ sale }) {
   )
 }
 
-// Icon + name + “N items” (exchange lines excluded)
+// Item name (full, wraps up to 2 lines) + "N items". No icon.
 function SaleItemsCell({ sale }) {
   const items = soldLines(sale)
   const qty = itemQtyTotal(items)
@@ -56,18 +54,14 @@ function SaleItemsCell({ sale }) {
   const title = items.map((i) => i.name).filter(Boolean).join(', ') || name
 
   return (
-    <div className="flex w-full min-w-0 items-center gap-2.5">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600 ring-1 ring-inset ring-sky-100">
-        <Package className="size-4" strokeWidth={1.75} />
-      </span>
-      <div className="min-w-0 flex-1 overflow-hidden">
-        <TruncatedText
-          text={title}
-          maxChars={10}
-          className="text-sm font-semibold text-slate-800"
-        />
-        <p className="truncate text-xs text-slate-500">{itemsLabel(qty)}</p>
-      </div>
+    <div className="min-w-0 w-full">
+      <p
+        title={title}
+        className="line-clamp-2 break-words text-sm font-semibold leading-snug text-slate-800"
+      >
+        {title}
+      </p>
+      <p className="mt-0.5 truncate text-xs text-slate-500">{itemsLabel(qty)}</p>
     </div>
   )
 }
@@ -167,8 +161,8 @@ function SaleMobileCard({ sale, index, money, onPrint }) {
         <div className="min-w-0 space-y-1">
           <p className="text-xs text-slate-400">#{index}</p>
           <SaleIdBadge sale={sale} />
-          <div className="pt-0.5 text-slate-600">
-            <DateTimeLines value={sale.soldAt} />
+          <div className="pt-0.5 text-xs text-slate-600">
+            <DateTimeLines value={sale.soldAt} className="text-xs" />
           </div>
         </div>
         <div className="flex flex-col items-end">
@@ -242,14 +236,7 @@ export function SalesTable({
   const rangeLabel = formatFilterDateRange(filterFrom, filterTo)
   const rowOffset = Math.max(0, (page - 1) * pageSize)
 
-  const titleNode = (
-    <span className="flex items-center gap-2.5">
-      {/* <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 ring-1 ring-inset ring-sky-100">
-        <FileText className="size-4" strokeWidth={1.75} />
-      </span> */}
-      <span>Sales Transactions</span>
-    </span>
-  )
+  const titleNode = <span>Sales Transactions</span>
 
   const rangeAction = rangeLabel ? (
     <span className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-xs">
@@ -285,12 +272,12 @@ export function SalesTable({
             />
           ))}
           desktop={
-            <Table className="table-fixed min-w-[76rem]">
+            <Table className="table-fixed min-w-[80rem]">
               <TableHeader>
                 <TableRow>
                   <TableHead rowSpan={2} className="w-[9rem] align-middle">Sale ID</TableHead>
-                  <TableHead rowSpan={2} className="w-[7.5rem] align-middle">Date &amp; Time</TableHead>
-                  <TableHead rowSpan={2} className="w-[12rem] align-middle">Sale Items</TableHead>
+                  <TableHead rowSpan={2} className="w-[10rem] align-middle">Date &amp; Time</TableHead>
+                  <TableHead rowSpan={2} className="w-[13rem] align-middle">Sale Items</TableHead>
                   <TableGroupHead colSpan={6}>Amount</TableGroupHead>
                   <TableHead rowSpan={2} className="w-[8rem] align-middle">Status</TableHead>
                   <TableHead rowSpan={2} className="w-[4rem] align-middle">Print</TableHead>
@@ -319,10 +306,13 @@ export function SalesTable({
                       <TableCell className="overflow-hidden">
                         <SaleIdBadge sale={sale} />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-slate-600">
-                        <DateTimeLines value={sale.soldAt} className="whitespace-nowrap" />
+                      <TableCell className="overflow-hidden whitespace-nowrap text-xs text-slate-600">
+                        <DateTimeLines
+                          value={sale.soldAt}
+                          className="whitespace-nowrap text-xs"
+                        />
                       </TableCell>
-                      <TableCell className="max-w-[12rem] overflow-hidden">
+                      <TableCell className="overflow-hidden">
                         <SaleItemsCell sale={sale} />
                       </TableCell>
                       <TableCell
