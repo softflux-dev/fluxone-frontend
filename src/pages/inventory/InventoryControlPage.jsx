@@ -302,9 +302,7 @@ export function InventoryControlPage() {
           ledgerKind={filters.ledgerKind || ''}
           from={filters.from || ''}
           to={filters.to || ''}
-          showLedgerKind={
-            tab === MOVEMENT_TYPES.ADJUSTMENT || tab === MOVEMENT_TYPES.OUT
-          }
+          showLedgerKind={false}
           ledgerKindOptions={
             tab === MOVEMENT_TYPES.OUT ? STOCK_OUT_KIND_OPTIONS : LEDGER_KIND_OPTIONS
           }
@@ -337,6 +335,9 @@ export function InventoryControlPage() {
             items={items}
             loading={loading}
             pagination={pagination}
+            ledgerKind={filters.ledgerKind || ''}
+            ledgerKindOptions={STOCK_OUT_KIND_OPTIONS}
+            onLedgerKindChange={(value) => handleFilterChange({ ledgerKind: value })}
             onPageChange={setPage}
             onPageSizeChange={(limit) => updateFilters({ limit })}
           />
@@ -346,6 +347,9 @@ export function InventoryControlPage() {
             items={items}
             loading={loading}
             pagination={pagination}
+            ledgerKind={filters.ledgerKind || ''}
+            ledgerKindOptions={LEDGER_KIND_OPTIONS}
+            onLedgerKindChange={(value) => handleFilterChange({ ledgerKind: value })}
             onPageChange={setPage}
             onPageSizeChange={(limit) => updateFilters({ limit })}
             onAddAdjustment={() => setAdjustmentOpen(true)}
