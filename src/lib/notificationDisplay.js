@@ -47,6 +47,22 @@ export function displayNotification(n = {}) {
     }
   }
 
+  if (type === 'branch_manager_email_changed') {
+    return {
+      title: n.title || 'Branch Manager email changed',
+      body: n.body && n.body !== n.title ? n.body : n.body || '',
+      branchName,
+    }
+  }
+
+  if (type === 'inventory_manager_email_changed') {
+    return {
+      title: n.title || 'Inventory Manager email changed',
+      body: n.body && n.body !== n.title ? n.body : n.body || '',
+      branchName,
+    }
+  }
+
   return {
     title: n.title || 'Notification',
     body: n.body && n.body !== n.title ? n.body : n.body || '',
