@@ -58,6 +58,38 @@ function lineFromProduct(product) {
   }
 }
 
+// Recipe + component stock → how many complete bundles can be assembled right now.
+function bundleInfoFromDetail(detail) {
+  const items = (detail?.bundleItems || []).map((c) => {
+    const need = Number(c.quantity) || 1
+    const have = Number(c.itemStock) || 0
+    return {
+      itemId: c.itemId,
+      name: [c.itemName, c.variantLabel].filter(Boolean).join(' - ') || 'Item',
+      need,
+      have,
+      canMake: Math.floor(have / need),
+    }
+  })
+  return { items, max: items.length ? Math.min(...items.map((i) => i.canMake)) : 0 }
+}
+
+// Per-line max, plus components shared by several selected bundles.
+function bundleStockError(lines, info) {
+  const used = new Map()
+  for (const row of lines) {
+    const b = info[row.productId]
+    if (row.type !== PRODUCT_TYPES.BUNDLE || !b) continue
+    const qty = Number(row.quantity) || 1
+    if (qty > b.max) return `${row.productName}: only ${b.max} bundle(s) can be assembled from current component stock.`
+    for (const c of b.items) used.set(c.itemId, { ...c, total: (used.get(c.itemId)?.total || 0) + c.need * qty })
+  }
+  for (const c of used.values()) {
+    if (c.total > c.have) return `Not enough ${c.name}: selected bundles need ${c.total}, only ${c.have} in stock.`
+  }
+  return ''
+}
+
 // Multi-item stock-in — supplier + checkbox product table → review & save.
 export function AddStockInDialog({
   open,
@@ -77,6 +109,7 @@ export function AddStockInDialog({
   const [selected, setSelected] = useState({})
   const [suppliers, setSuppliers] = useState([])
   const [supplierId, setSupplierId] = useState('')
+  const [bundleInfo, setBundleInfo] = useState({})
   const { formError, setFormError, resetErrors } = useFieldErrors()
 
   const selectedLines = useMemo(() => Object.values(selected), [selected])
@@ -89,6 +122,7 @@ export function AddStockInDialog({
     setFilters(emptyFilters())
     setSelected({})
     setSupplierId('')
+    setBundleInfo({})
 
     const seed = seedRow || initialProduct
     if (seed?.productId || seed?.id) {
@@ -115,6 +149,17 @@ export function AddStockInDialog({
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open reset
   }, [open, initialProduct?.id, seedRow?.productId])
+
+  // Selected bundles: load recipe + component stock to show / enforce the max quantity.
+  useEffect(() => {
+    if (!open) return
+    for (const row of selectedLines) {
+      if (row.type !== PRODUCT_TYPES.BUNDLE || bundleInfo[row.productId]) continue
+      void fetchControlProductDetail(row.productId).then((res) => {
+        if (res.success) setBundleInfo((prev) => ({ ...prev, [row.productId]: bundleInfoFromDetail(res.data) }))
+      })
+    }
+  }, [open, selectedLines, bundleInfo])
 
   // Load selectable SKUs from catalog filters.
   useEffect(() => {
@@ -209,6 +254,11 @@ export function AddStockInDialog({
       setFormError('Select at least one item')
       return
     }
+    const stockError = bundleStockError(selectedLines, bundleInfo)
+    if (stockError) {
+      setFormError(stockError)
+      return
+    }
     resetErrors()
     setStep(2)
   }
@@ -221,6 +271,12 @@ export function AddStockInDialog({
   async function handleSave() {
     if (!selectedLines.length) {
       setFormError('Select at least one item')
+      setStep(1)
+      return
+    }
+    const stockError = bundleStockError(selectedLines, bundleInfo)
+    if (stockError) {
+      setFormError(stockError)
       setStep(1)
       return
     }
@@ -318,6 +374,7 @@ export function AddStockInDialog({
               selected={selected}
               onToggle={toggleProduct}
               onLineChange={patchLine}
+              bundleInfo={bundleInfo}
               loading={productsLoading && !isUpdate}
             />
           </div>

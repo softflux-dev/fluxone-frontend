@@ -1,11 +1,4 @@
-import {
-  Banknote,
-  Check,
-  FileText,
-  Printer,
-  RotateCcw,
-  CalendarDays,
-} from 'lucide-react'
+import { FileText, Printer, RotateCcw, CalendarDays } from 'lucide-react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { DateTimeLines } from '@/components/shared/DateTimeLines'
 import { DataCard, ResponsiveDataShell } from '@/components/shared/ResponsiveDataShell'
@@ -68,27 +61,24 @@ function SaleItemsCell({ sale }) {
 
 function StatusPill({ sale }) {
   const status = saleActionStatus(sale)
-  const Icon =
-    status.key === 'refunded' ? RotateCcw : status.key === 'change' ? Banknote : Check
-  const className = cn(
-    'inline-flex size-8 shrink-0 items-center justify-center rounded-full ring-1 ring-inset',
-    status.className,
-  )
-  const tooltip = status.label ?? status.key
-
   return (
-    <span className={className} title={tooltip} aria-label={tooltip}>
-      <Icon className="size-4 shrink-0" strokeWidth={2} />
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
+        status.className,
+      )}
+    >
+      {status.label ?? status.key}
     </span>
   )
 }
 
 // BM sees sales made at a Local Admin (POS) price the IM has not approved / has rejected
 const DISPUTE_TAGS = {
-  pending: { label: 'Price dispute · Pending', className: 'bg-amber-50 text-amber-800 ring-amber-200' },
-  approved: { label: 'Price dispute · Approved', className: 'bg-emerald-50 text-emerald-800 ring-emerald-200' },
-  rejected: { label: 'Price dispute · Rejected', className: 'bg-red-50 text-red-800 ring-red-200' },
-  superseded: { label: 'Price dispute · Overridden', className: 'bg-slate-100 text-slate-700 ring-slate-200' },
+  pending: { label: 'Pending', className: 'border-amber-200 bg-amber-50 text-amber-800', dot: 'bg-amber-500' },
+  approved: { label: 'Approved', className: 'border-emerald-200 bg-emerald-50 text-emerald-800', dot: 'bg-emerald-500' },
+  rejected: { label: 'Rejected', className: 'border-red-200 bg-red-50 text-red-800', dot: 'bg-red-500' },
+  superseded: { label: 'Overridden', className: 'border-slate-200 bg-slate-100 text-slate-700', dot: 'bg-slate-400' },
 }
 
 function PriceDisputeTag({ sale }) {
@@ -97,12 +87,14 @@ function PriceDisputeTag({ sale }) {
   return (
     <span
       className={cn(
-        'mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset',
+        'mt-1.5 inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium leading-none',
         tag.className,
       )}
       title="Sold at a price changed on the POS and reviewed by the Inventory Manager"
     >
-      {tag.label}
+      <span className={cn('size-1.5 rounded-full', tag.dot)} />
+      <span className="text-slate-600">Price dispute</span>
+      <span className="font-bold">{tag.label}</span>
     </span>
   )
 }
@@ -279,7 +271,7 @@ export function SalesTable({
                   <TableHead rowSpan={2} className="w-[10rem] align-middle">Date &amp; Time</TableHead>
                   <TableHead rowSpan={2} className="w-[13rem] align-middle">Sale Items</TableHead>
                   <TableGroupHead colSpan={6}>Amount</TableGroupHead>
-                  <TableHead rowSpan={2} className="w-[8rem] align-middle">Status</TableHead>
+                  <TableHead rowSpan={2} className="w-[12rem] align-middle">Status</TableHead>
                   <TableHead rowSpan={2} className="w-[4rem] align-middle">Print</TableHead>
                 </TableRow>
                 <TableRow>

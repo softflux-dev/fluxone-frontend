@@ -110,6 +110,8 @@ export function SalesPage() {
 
   return (
     <div className="space-y-6 pb-8">
+      {/* print:hidden — the fixed invoice dialog repeats on every printed page of the list behind it */}
+      <div className="space-y-6 print:hidden">
       <MotionHeader>
         <PageHeader
           eyebrow="Transactions"
@@ -153,6 +155,7 @@ export function SalesPage() {
           filterTo={filterTo}
         />
       </MotionReveal>
+      </div>
 
       <Dialog
         open={Boolean(invoiceTarget)}

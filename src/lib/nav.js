@@ -8,7 +8,6 @@ const INVENTORY_NAV = [
   { to: PATHS.inventory.products, label: 'Products', end: false },
   // { to: PATHS.inventory.bundles, label: 'Bundles', end: false },
   { to: PATHS.inventory.control, label: 'Control', end: false },
-  { to: PATHS.inventory.pricingApprovals, label: 'Pricing Approval', end: false },
 ]
 
 const BRANCH_NAV = [
@@ -44,6 +43,7 @@ const INVENTORY_SIDE_NAV = [
   { to: PATHS.inventory.notifications, label: 'Notifications', end: false },
   { to: PATHS.inventory.suppliers, label: 'Suppliers', end: false },
   { to: PATHS.inventory.orders, label: 'Orders', end: false },
+  { to: PATHS.inventory.pricingApprovals, label: 'Price Conflicts', end: false },
 ]
 
 const BRANCH_SIDE_NAV = [
