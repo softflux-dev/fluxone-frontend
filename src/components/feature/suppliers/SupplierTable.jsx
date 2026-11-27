@@ -1,4 +1,5 @@
-import { Building2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Building2, Truck } from 'lucide-react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { RowActionButtons } from '@/components/shared/ActionIconButton'
 import { SurfaceCard } from '@/components/shared/SurfaceCard'
@@ -18,15 +19,31 @@ import { BRAND } from '@/lib/constants'
 import { displaySupplierRef } from '@/lib/formatDisplayId'
 
 function SupplierAvatar({ row }) {
-  if (row.imageUrl) {
-    return <img src={row.imageUrl} alt="" className="size-10 shrink-0 rounded-lg object-cover" />
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    setFailed(false)
+  }, [row.imageUrl])
+
+  if (row.imageUrl && !failed) {
+    return (
+      <img
+        src={row.imageUrl}
+        alt={row.companyName || ''}
+        onError={() => setFailed(true)}
+        className="size-10 shrink-0 rounded-xl bg-white object-cover shadow-sm ring-1 ring-slate-200 dark:ring-slate-700"
+      />
+    )
   }
+
   return (
     <div
-      className="flex size-10 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
+      className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm"
       style={{ background: `linear-gradient(145deg, ${BRAND.purple}, ${BRAND.deep})` }}
+      role="img"
+      aria-label={row.companyName || 'No supplier image'}
     >
-      {(row.companyName || '?').slice(0, 1).toUpperCase()}
+      <Truck className="size-5" />
     </div>
   )
 }
