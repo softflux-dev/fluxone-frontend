@@ -169,8 +169,8 @@ export function PricingApprovalsPage() {
                     <th className="w-10 p-3">
                       <Checkbox
                         checked={allSelected}
-                        onCheckedChange={(v) =>
-                          setSelected(v ? new Set(items.map((i) => i.id)) : new Set())
+                        onChange={(e) =>
+                          setSelected(e.target.checked ? new Set(items.map((i) => i.id)) : new Set())
                         }
                         aria-label="Select all"
                       />
@@ -190,7 +190,7 @@ export function PricingApprovalsPage() {
                       <td className="p-3">
                         <Checkbox
                           checked={selected.has(row.id)}
-                          onCheckedChange={() => toggle(row.id)}
+                          onChange={() => toggle(row.id)}
                           aria-label={`Select ${row.name}`}
                         />
                       </td>
