@@ -17,6 +17,7 @@ export function ProductStockPickerList({
   selected = {},
   onToggle,
   onLineChange,
+  bundleInfo = {},
   loading = false,
   className,
 }) {
@@ -43,12 +44,14 @@ export function ProductStockPickerList({
           const line = selected[product.id]
           const checked = Boolean(line)
           const name = productLabel(product)
+          const isBundle = product.type === PRODUCT_TYPES.BUNDLE
+          const info = bundleInfo[product.id]
 
           return (
             <div
               key={product.id}
               className={cn(
-                'flex items-center gap-2 border-b border-border px-3 py-2 last:border-b-0',
+                'flex flex-wrap items-center gap-2 border-b border-border px-3 py-2 last:border-b-0',
                 checked ? 'bg-purple-50/40' : 'hover:bg-slate-50/80',
               )}
             >
@@ -93,11 +96,40 @@ export function ProductStockPickerList({
                     <Label className="text-[10px] text-slate-400">Qty</Label>
                     <WholeNumberInput
                       min={1}
+                      max={isBundle && info ? info.max : undefined}
                       value={line.quantity ?? '1'}
                       className="h-8 w-full"
                       onChange={(e) => onLineChange?.(product.id, { quantity: e.target.value })}
                     />
                   </div>
+                </div>
+              ) : null}
+
+              {checked && isBundle ? (
+                <div className="w-full rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  {info ? (
+                    <>
+                      <p className={cn('font-semibold', info.max > 0 ? 'text-emerald-700' : 'text-red-600')}>
+                        {info.max > 0
+                          ? `Maximum you can add: ${info.max} bundle(s)`
+                          : 'Cannot add: a component is out of stock'}
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {info.items.map((c) => (
+                          <li key={c.itemId} className="flex justify-between gap-2">
+                            <span className="truncate">
+                              {c.name} · {c.need} per bundle
+                            </span>
+                            <span className={cn('shrink-0', c.canMake === info.max && 'font-semibold text-amber-700')}>
+                              {c.have} in stock → {c.canMake} bundle(s)
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : (
+                    <p>Checking component stock…</p>
+                  )}
                 </div>
               ) : null}
             </div>
